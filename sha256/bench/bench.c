@@ -21,7 +21,7 @@
 #include <openssl/sha.h>
 #include "clocks.h"
 
-#define MAX_SIZE_BITS 6
+#define MAX_SIZE_BITS 21
 
 struct seqTimes{
   uint64_t size;
@@ -81,15 +81,15 @@ void print_table(struct seqTimes * table, int items)
 {
   int i;
   printf("    SHA256: OpenSSL vs SHANI             \n");
-  printf("╔════════╦══════════╦══════════╦══════════╗\n");
-  printf("║ bytes  ║ OpenSSL  ║  SHANI   ║ Speedup  ║\n");
-  printf("╠════════╩══════════╩══════════╩══════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║ OpenSSL ║  SHANI  ║ Speedup ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
   for(i=0;i<items;i++) {
-    printf("║ %6ld ║ %8ld ║ %8ld ║ %8.2f ║\n",
+    printf("║%9ld║%9ld║%9ld║%9.2f║\n",
            table[i].size,table[i].openssl,
-           table[i].shani,1-table[i].openssl/(double)table[i].shani);
+           table[i].shani,table[i].openssl/(double)table[i].shani);
   }
-  printf("╚════════╩══════════╩══════════╩══════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
 }
 
 #define BENCH_SIZE_1W(FUNC,IMPL)       \
@@ -111,7 +111,9 @@ void bench_1w(){
   unsigned char * message = (unsigned char*)_mm_malloc(MAX_SIZE,ALIGN_BYTES);
   unsigned char digest[32];
 
+  printf("Running OpenSSL:\n");
   BENCH_SIZE_1W(SHA256,openssl);
+  printf("Running shani:\n");
   BENCH_SIZE_1W(sha256_update_shani,shani);
   print_table(table,MAX_SIZE_BITS);
   _mm_free(message);
