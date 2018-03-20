@@ -7,5 +7,5 @@ add_executable(bench_sha256
 	clocks.c
 	bench.c
 )
-add_dependencies(bench_sha256 shani prng)
-target_link_libraries(bench_sha256	shani prng crypto)
+add_dependencies(bench_sha256 shani cpuid prng)
+target_link_libraries(bench_sha256	shani cpuid prng crypto)

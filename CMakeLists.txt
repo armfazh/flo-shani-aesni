@@ -6,5 +6,8 @@ set(LIBRARY_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/lib )
 #library
 add_subdirectory(sha256)
 
-#third-party code
+#Auxiliary code
+add_subdirectory(cpuid)
 add_subdirectory(prng)
+
+#Third-party code

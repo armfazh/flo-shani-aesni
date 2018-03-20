@@ -19,15 +19,16 @@
 #include <stdint.h>
 #include <shani.h>
 #include <openssl/sha.h>
-#include<openssl/objects.h>
-#include <prng/random.h>
+#include <prng/flo-random.h>
+#include <cpuid/flo-cpuid.h>
 #include "clocks.h"
 
 #define MAX_SIZE_BITS 7
 
 struct seqTimings {
   uint64_t size;
-  uint64_t openssl;
+  uint64_t openssl_shani;
+  uint64_t openssl_native;
   uint64_t shani;
 };
 
@@ -123,42 +124,46 @@ void print_tableSeq(struct seqTimings *table, int items) {
   printf("║  bytes  ║ OpenSSL ║  SHANI  ║ Speedup ║\n");
   printf("╠═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%9ld║%9ld║%9.2f║\n",
-           table[i].size, table[i].openssl,
-           table[i].shani, table[i].openssl / (double) table[i].shani);
+    printf("║%9ld║%9ld║%9ld║%9ld║%9.2f║\n", table[i].size,
+           table[i].openssl_shani,
+           table[i].openssl_native,
+           table[i].shani,
+           table[i].openssl_native / (double) table[i].shani);
   }
   printf("╚═════════╩═════════╩═════════╩═════════╝\n");
 }
 
 void bench_1w() {
-  struct seqTimings table[MAX_SIZE_BITS];
+  struct seqTimings table[MAX_SIZE_BITS] = {0};
   unsigned long it = 0;
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
   unsigned char digest[32];
 
-  uint64_t *c = OPENSSL_ia32cap_loc();
-  printf("Running OpenSSL:\n");
-  BENCH_SIZE_1W(SHA256, openssl);
+  if(hasSHANI()) {
+    printf("Running OpenSSL (shani):\n");
+    BENCH_SIZE_1W(SHA256, openssl_shani);
 
-  // Disable SHA-NI
-  c[1] &= 0x10000000;
-  printf("Running OpenSSL:\n");
-  BENCH_SIZE_1W(SHA256, openssl);
+    disableSHANI();
+    printf("Running OpenSSL (native):\n");
+    BENCH_SIZE_1W(SHA256, openssl_native);
 
-  printf("Running shani:\n");
-  BENCH_SIZE_1W(sha256_update_shani, shani);
+    printf("Running shani:\n");
+    BENCH_SIZE_1W(sha256_update_shani, shani);
+  }
+  else{
+    printf("Running OpenSSL (native):\n");
+    BENCH_SIZE_1W(SHA256, openssl_native);
+  }
   print_tableSeq(table, MAX_SIZE_BITS);
   _mm_free(message);
 }
 
 int main(void) {
-
+  machine_info();
   printf("== Start of Benchmark ===\n");
-  printf("OpenSSL version: %s\n", SSLeay_version(SSLEAY_VERSION));
-
   bench_1w();
-  bench_Nw();
+//  bench_Nw();
   printf("== End of Benchmark =====\n");
   return 0;
 }
