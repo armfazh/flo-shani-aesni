@@ -120,17 +120,18 @@ void bench_Nw() {
 void print_tableSeq(struct seqTimings *table, int items) {
   int i;
   printf("    SHA256: OpenSSL vs SHANI             \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║ OpenSSL ║  SHANI  ║ Speedup ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  Size   ║ OpenSSL ║ OpenSSL ║This work║ Speedup ║\n");
+  printf("║ (bytes) ║  (x64)  ║ (shani) ║ (shani) ║x64/shani║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
     printf("║%9ld║%9ld║%9ld║%9ld║%9.2f║\n", table[i].size,
-           table[i].openssl_shani,
            table[i].openssl_native,
+           table[i].openssl_shani,
            table[i].shani,
            table[i].openssl_native / (double) table[i].shani);
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
 }
 
 void bench_1w() {

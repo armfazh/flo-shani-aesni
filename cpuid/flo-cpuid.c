@@ -100,7 +100,7 @@ void machine_info()
 
 void openssl_version()
 {
-  printf("OpenSSL version: %s\n", OPENSSL_VERSION_TEXT);
+  //printf("OpenSSL version: %s\n", OPENSSL_VERSION_TEXT);
 }
 
 int hasSHANI()
@@ -111,7 +111,7 @@ int hasSHANI()
   ecx = 0;
   edx = 0;
   my_cpuid(eax, ebx, ecx, edx);
-  supports_capability(ebx, bit_SHA);
+  return supports_capability(ebx, bit_SHA);
 }
 
 void disableSHANI()
@@ -123,7 +123,7 @@ void disableSHANI()
 
 void openssl_caps()
 {
-
+#if 0 
 
   printf("OpenSSL version: %s\n", SSLeay_version(SSLEAY_VERSION));
   printf("compiled with: %s\n", SSLeay_version(SSLEAY_CFLAGS));
@@ -156,4 +156,5 @@ void openssl_caps()
 //    {
 //        printf("%d  supported: [%s]\n",i, caps[1] & ((uint64_t) 1 << i) ? "yes" : "no");
 //    }
+#endif 
 }
