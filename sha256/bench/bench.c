@@ -39,7 +39,7 @@ struct parallelTimings {
   uint64_t _8x;
 };
 
-void print_tableParallel(struct parallelTimings *table, int items) {
+void print_tableParallelSpeedup(struct parallelTimings *table, int items) {
   int i;
   printf("          Multiple-message Hashing \n");
   printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
@@ -52,6 +52,23 @@ void print_tableParallel(struct parallelTimings *table, int items) {
            2.0*table[i]._1x/(double)table[i]._2x,
            4.0*table[i]._1x/(double)table[i]._4x,
            8.0*table[i]._1x/(double)table[i]._8x);
+  }
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
+}
+
+void print_tableParallelCPB(struct parallelTimings *table, int items) {
+  int i;
+  printf("          Multiple-message Hashing \n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   2x    ║   4x    ║   8x    ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
+  for (i = 0; i < items; i++) {
+    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
+           table[i].size,
+           table[i]._1x/(double)table[i].size/1.0,
+           table[i]._2x/(double)table[i].size/2.0,
+           table[i]._4x/(double)table[i].size/4.0,
+           table[i]._8x/(double)table[i].size/8.0);
   }
   printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
 }
@@ -110,7 +127,8 @@ void bench_Nw() {
     BENCH_SIZE_NW(sha256_x4_update_shani_4x, 4);
     printf("Running 8x:\n");
     BENCH_SIZE_NW(sha256_x8_update_shani_8x, 8);
-    print_tableParallel(table, MAX_SIZE_BITS);
+    print_tableParallelCPB(table, MAX_SIZE_BITS);
+    print_tableParallelSpeedup(table, MAX_SIZE_BITS);
   }
   else{
     printf("This processor does not supports SHANI set.\n");
