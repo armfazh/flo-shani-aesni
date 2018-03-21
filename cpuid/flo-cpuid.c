@@ -100,7 +100,7 @@ void machine_info()
 
 void openssl_version()
 {
-  //printf("OpenSSL version: %s\n", OPENSSL_VERSION_TEXT);
+  printf("OpenSSL version: %s\n", OPENSSL_VERSION_TEXT);
 }
 
 int hasSHANI()
@@ -116,9 +116,11 @@ int hasSHANI()
 
 void disableSHANI()
 {
-  uint64_t *c = OPENSSL_ia32cap_loc();
-  // Disable SHA-NI
-  c[1] &= ~0x20000000;
+  if( OPENSSL_VERSION_NUMBER <0x10002FFF) {
+    extern unsigned long *OPENSSL_ia32cap_loc(void);
+    uint64_t *c = OPENSSL_ia32cap_loc();
+    c[1] &= ~0x20000000;
+  }
 }
 
 void openssl_caps()
