@@ -472,6 +472,136 @@ void update_shani_2x(
 }
 
 void update_shani_4x(
+    uint32_t *state0, const uint8_t *msg0,
+    uint32_t *state1, const uint8_t *msg1,
+    uint32_t *state2, const uint8_t *msg2,
+    uint32_t *state3, const uint8_t *msg3,
+    uint32_t num_blocks) {
+  int i, j, i1, i2, i3;
+  __m128i Ki;
+  __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
+  __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
+  __m128i A2, C2, ABEF2, CDGH2, X2, Y2, W2[4];
+  __m128i A3, C3, ABEF3, CDGH3, X3, Y3, W3[4];
+
+  X0 = LOAD(state0 + 0);    X1 = LOAD(state1 + 0);    X2 = LOAD(state2 + 0);    X3 = LOAD(state3 + 0);
+  Y0 = LOAD(state0 + 1);    Y1 = LOAD(state1 + 1);    Y2 = LOAD(state2 + 1);    Y3 = LOAD(state3 + 1);
+  A0 = CVLO(X0, Y0, 0x1B);  A1 = CVLO(X1, Y1, 0x1B);  A2 = CVLO(X2, Y2, 0x1B);  A3 = CVLO(X3, Y3, 0x1B);
+  C0 = CVHI(X0, Y0, 0x1B);  C1 = CVHI(X1, Y1, 0x1B);  C2 = CVHI(X2, Y2, 0x1B);  C3 = CVHI(X3, Y3, 0x1B);
+
+  while (num_blocks > 0) {
+    ABEF0 = A0;    ABEF1 = A1;  ABEF2 = A2;    ABEF3 = A3;
+    CDGH0 = C0;    CDGH1 = C1;  CDGH2 = C2;    CDGH3 = C3;
+
+    for (i = 0; i < 4; i++) {
+      Ki = LOAD(CONST_K + i);
+      W0[i] = L2B(LOAD_U(msg0 + i));      W1[i] = L2B(LOAD_U(msg1 + i));   W2[i] = L2B(LOAD_U(msg2 + i));      W3[i] = L2B(LOAD_U(msg3 + i));
+      X0 = ADD(W0[i], Ki);                X1 = ADD(W1[i], Ki);             X2 = ADD(W2[i], Ki);                X3 = ADD(W3[i], Ki);
+      Y0 = HIGH(X0);                      Y1 = HIGH(X1);                   Y2 = HIGH(X2);                      Y3 = HIGH(X3);
+      C0 = SHA(C0, A0, X0);               C1 = SHA(C1, A1, X1);            C2 = SHA(C2, A2, X2);               C3 = SHA(C3, A3, X3);
+      A0 = SHA(A0, C0, Y0);               A1 = SHA(A1, C1, Y1);            A2 = SHA(A2, C2, Y2);               A3 = SHA(A3, C3, Y3);
+    }
+    for (j = 1; j < 4; j++) {
+      for (i = 0, i1 = 1, i2 = 2, i3 = 3; i < 4; i++) {
+        Ki = LOAD(CONST_K + 4 * j + i);
+        X0 = MSG1(W0[i], W0[i1]);        X1 = MSG1(W1[i], W1[i1]);      X2 = MSG1(W2[i], W2[i1]);        X3 = MSG1(W3[i], W3[i1]);
+        Y0 = ALIGNR(W0[i3], W0[i2]);     Y1 = ALIGNR(W1[i3], W1[i2]);   Y2 = ALIGNR(W2[i3], W2[i2]);     Y3 = ALIGNR(W3[i3], W3[i2]);
+        X0 = ADD(X0, Y0);                X1 = ADD(X1, Y1);              X2 = ADD(X2, Y2);                X3 = ADD(X3, Y3);
+        W0[i] = MSG2(X0, W0[i3]);        W1[i] = MSG2(X1, W1[i3]);      W2[i] = MSG2(X2, W2[i3]);        W3[i] = MSG2(X3, W3[i3]);
+        X0 = ADD(W0[i], Ki);             X1 = ADD(W1[i], Ki);           X2 = ADD(W2[i], Ki);             X3 = ADD(W3[i], Ki);
+        Y0 = HIGH(X0);                   Y1 = HIGH(X1);                 Y2 = HIGH(X2);                   Y3 = HIGH(X3);
+        C0 = SHA(C0, A0, X0);            C1 = SHA(C1, A1, X1);          C2 = SHA(C2, A2, X2);            C3 = SHA(C3, A3, X3);
+        A0 = SHA(A0, C0, Y0);            A1 = SHA(A1, C1, Y1);          A2 = SHA(A2, C2, Y2);            A3 = SHA(A3, C3, Y3);
+        i1 = i2;
+        i2 = i3;
+        i3 = i;
+      }
+    }
+
+    A0 = ADD(A0, ABEF0);    A1 = ADD(A1, ABEF1);  A2 = ADD(A2, ABEF2);    A3 = ADD(A3, ABEF3);
+    C0 = ADD(C0, CDGH0);    C1 = ADD(C1, CDGH1);  C2 = ADD(C2, CDGH2);    C3 = ADD(C3, CDGH3);
+    msg0 += 64;           msg1 += 64;           msg2 += 64;             msg3 += 64;
+    num_blocks--;
+  }
+
+  X0 = CVHI(A0, C0, 0xB1);  X1 = CVHI(A1, C1, 0xB1);  X2 = CVHI(A2, C2, 0xB1);  X3 = CVHI(A3, C3, 0xB1);
+  Y0 = CVLO(A0, C0, 0xB1);  Y1 = CVLO(A1, C1, 0xB1);  Y2 = CVLO(A2, C2, 0xB1);  Y3 = CVLO(A3, C3, 0xB1);
+
+  STORE(state0 + 0, X0);  STORE(state1 + 0, X1);  STORE(state2 + 0, X2);  STORE(state3 + 0, X3);
+  STORE(state0 + 1, Y0);  STORE(state1 + 1, Y1);  STORE(state2 + 1, Y2);  STORE(state3 + 1, Y3);
+}
+
+
+void update_shani_8x(
+    uint32_t *state0, const uint8_t *msg0,
+    uint32_t *state1, const uint8_t *msg1,
+    uint32_t *state2, const uint8_t *msg2,
+    uint32_t *state3, const uint8_t *msg3,
+    uint32_t *state4, const uint8_t *msg4,
+    uint32_t *state5, const uint8_t *msg5,
+    uint32_t *state6, const uint8_t *msg6,
+    uint32_t *state7, const uint8_t *msg7,
+    uint32_t num_blocks) {
+  int i, j, i1, i2, i3;
+  __m128i Ki;
+  __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
+  __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
+  __m128i A2, C2, ABEF2, CDGH2, X2, Y2, W2[4];
+  __m128i A3, C3, ABEF3, CDGH3, X3, Y3, W3[4];
+  __m128i A4, C4, ABEF4, CDGH4, X4, Y4, W4[4];
+  __m128i A5, C5, ABEF5, CDGH5, X5, Y5, W5[4];
+  __m128i A6, C6, ABEF6, CDGH6, X6, Y6, W6[4];
+  __m128i A7, C7, ABEF7, CDGH7, X7, Y7, W7[4];
+
+  X0 = LOAD(state0 + 0);    X1 = LOAD(state1 + 0);    X2 = LOAD(state2 + 0);    X3 = LOAD(state3 + 0);    X4 = LOAD(state4 + 0);    X5 = LOAD(state5 + 0);    X6 = LOAD(state6 + 0);    X7 = LOAD(state7 + 0);
+  Y0 = LOAD(state0 + 1);    Y1 = LOAD(state1 + 1);    Y2 = LOAD(state2 + 1);    Y3 = LOAD(state3 + 1);    Y4 = LOAD(state4 + 1);    Y5 = LOAD(state5 + 1);    Y6 = LOAD(state6 + 1);    Y7 = LOAD(state7 + 1);
+  A0 = CVLO(X0, Y0, 0x1B);  A1 = CVLO(X1, Y1, 0x1B);  A2 = CVLO(X2, Y2, 0x1B);  A3 = CVLO(X3, Y3, 0x1B);  A4 = CVLO(X4, Y4, 0x1B);  A5 = CVLO(X5, Y5, 0x1B);  A6 = CVLO(X6, Y6, 0x1B);  A7 = CVLO(X7, Y7, 0x1B);
+  C0 = CVHI(X0, Y0, 0x1B);  C1 = CVHI(X1, Y1, 0x1B);  C2 = CVHI(X2, Y2, 0x1B);  C3 = CVHI(X3, Y3, 0x1B);  C4 = CVHI(X4, Y4, 0x1B);  C5 = CVHI(X5, Y5, 0x1B);  C6 = CVHI(X6, Y6, 0x1B);  C7 = CVHI(X7, Y7, 0x1B);
+
+  while (num_blocks > 0) {
+    ABEF0 = A0;    ABEF1 = A1;  ABEF2 = A2;    ABEF3 = A3;  ABEF4 = A4;    ABEF5 = A5;  ABEF6 = A6;    ABEF7 = A7;
+    CDGH0 = C0;    CDGH1 = C1;  CDGH2 = C2;    CDGH3 = C3;  CDGH4 = C4;    CDGH5 = C5;  CDGH6 = C6;    CDGH7 = C7;
+
+    for (i = 0; i < 4; i++) {
+      Ki = LOAD(CONST_K + i);
+      W0[i] = L2B(LOAD_U(msg0 + i));  W1[i] = L2B(LOAD_U(msg1 + i));  W2[i] = L2B(LOAD_U(msg2 + i));  W3[i] = L2B(LOAD_U(msg3 + i));  W4[i] = L2B(LOAD_U(msg4 + i));  W5[i] = L2B(LOAD_U(msg5 + i));  W6[i] = L2B(LOAD_U(msg6 + i));  W7[i] = L2B(LOAD_U(msg7 + i));
+      X0 = ADD(W0[i], Ki);            X1 = ADD(W1[i], Ki);            X2 = ADD(W2[i], Ki);            X3 = ADD(W3[i], Ki);            X4 = ADD(W4[i], Ki);            X5 = ADD(W5[i], Ki);            X6 = ADD(W6[i], Ki);            X7 = ADD(W7[i], Ki);
+      Y0 = HIGH(X0);                  Y1 = HIGH(X1);                  Y2 = HIGH(X2);                  Y3 = HIGH(X3);                  Y4 = HIGH(X4);                  Y5 = HIGH(X5);                  Y6 = HIGH(X6);                  Y7 = HIGH(X7);
+      C0 = SHA(C0, A0, X0);           C1 = SHA(C1, A1, X1);           C2 = SHA(C2, A2, X2);           C3 = SHA(C3, A3, X3);           C4 = SHA(C4, A4, X4);           C5 = SHA(C5, A5, X5);           C6 = SHA(C6, A6, X6);           C7 = SHA(C7, A7, X7);
+      A0 = SHA(A0, C0, Y0);           A1 = SHA(A1, C1, Y1);           A2 = SHA(A2, C2, Y2);           A3 = SHA(A3, C3, Y3);           A4 = SHA(A4, C4, Y4);           A5 = SHA(A5, C5, Y5);           A6 = SHA(A6, C6, Y6);           A7 = SHA(A7, C7, Y7);
+    }
+    for (j = 1; j < 4; j++) {
+      for (i = 0, i1 = 1, i2 = 2, i3 = 3; i < 4; i++) {
+        Ki = LOAD(CONST_K + 4 * j + i);
+        X0 = MSG1(W0[i], W0[i1]);     X1 = MSG1(W1[i], W1[i1]);     X2 = MSG1(W2[i], W2[i1]);     X3 = MSG1(W3[i], W3[i1]);     X4 = MSG1(W4[i], W4[i1]);     X5 = MSG1(W5[i], W5[i1]);     X6 = MSG1(W6[i], W6[i1]);     X7 = MSG1(W7[i], W7[i1]);
+        Y0 = ALIGNR(W0[i3], W0[i2]);  Y1 = ALIGNR(W1[i3], W1[i2]);  Y2 = ALIGNR(W2[i3], W2[i2]);  Y3 = ALIGNR(W3[i3], W3[i2]);  Y4 = ALIGNR(W4[i3], W4[i2]);  Y5 = ALIGNR(W5[i3], W5[i2]);  Y6 = ALIGNR(W6[i3], W6[i2]);  Y7 = ALIGNR(W7[i3], W7[i2]);
+        X0 = ADD(X0, Y0);             X1 = ADD(X1, Y1);             X2 = ADD(X2, Y2);             X3 = ADD(X3, Y3);             X4 = ADD(X4, Y4);             X5 = ADD(X5, Y5);             X6 = ADD(X6, Y6);             X7 = ADD(X7, Y7);
+        W0[i] = MSG2(X0, W0[i3]);     W1[i] = MSG2(X1, W1[i3]);     W2[i] = MSG2(X2, W2[i3]);     W3[i] = MSG2(X3, W3[i3]);     W4[i] = MSG2(X4, W4[i3]);     W5[i] = MSG2(X5, W5[i3]);     W6[i] = MSG2(X6, W6[i3]);     W7[i] = MSG2(X7, W7[i3]);
+        X0 = ADD(W0[i], Ki);          X1 = ADD(W1[i], Ki);          X2 = ADD(W2[i], Ki);          X3 = ADD(W3[i], Ki);          X4 = ADD(W4[i], Ki);          X5 = ADD(W5[i], Ki);          X6 = ADD(W6[i], Ki);          X7 = ADD(W7[i], Ki);
+        Y0 = HIGH(X0);                Y1 = HIGH(X1);                Y2 = HIGH(X2);                Y3 = HIGH(X3);                Y4 = HIGH(X4);                Y5 = HIGH(X5);                Y6 = HIGH(X6);                Y7 = HIGH(X7);
+        C0 = SHA(C0, A0, X0);         C1 = SHA(C1, A1, X1);         C2 = SHA(C2, A2, X2);         C3 = SHA(C3, A3, X3);         C4 = SHA(C4, A4, X4);         C5 = SHA(C5, A5, X5);         C6 = SHA(C6, A6, X6);         C7 = SHA(C7, A7, X7);
+        A0 = SHA(A0, C0, Y0);         A1 = SHA(A1, C1, Y1);         A2 = SHA(A2, C2, Y2);         A3 = SHA(A3, C3, Y3);         A4 = SHA(A4, C4, Y4);         A5 = SHA(A5, C5, Y5);         A6 = SHA(A6, C6, Y6);         A7 = SHA(A7, C7, Y7);
+        i1 = i2;
+        i2 = i3;
+        i3 = i;
+      }
+    }
+
+      A0 = ADD(A0, ABEF0);    A1 = ADD(A1, ABEF1);  A2 = ADD(A2, ABEF2);    A3 = ADD(A3, ABEF3);    A4 = ADD(A4, ABEF4);    A5 = ADD(A5, ABEF5);  A6 = ADD(A6, ABEF6);    A7 = ADD(A7, ABEF7);
+      C0 = ADD(C0, CDGH0);    C1 = ADD(C1, CDGH1);  C2 = ADD(C2, CDGH2);    C3 = ADD(C3, CDGH3);    C4 = ADD(C4, CDGH4);    C5 = ADD(C5, CDGH5);  C6 = ADD(C6, CDGH6);    C7 = ADD(C7, CDGH7);
+    msg0 += 64;             msg1 += 64;           msg2 += 64;             msg3 += 64;             msg4 += 64;             msg5 += 64;           msg6 += 64;             msg7 += 64;
+    num_blocks--;
+  }
+
+  X0 = CVHI(A0, C0, 0xB1);  X1 = CVHI(A1, C1, 0xB1);  X2 = CVHI(A2, C2, 0xB1);  X3 = CVHI(A3, C3, 0xB1);  X4 = CVHI(A4, C4, 0xB1);  X5 = CVHI(A5, C5, 0xB1);  X6 = CVHI(A6, C6, 0xB1);  X7 = CVHI(A7, C7, 0xB1);
+  Y0 = CVLO(A0, C0, 0xB1);  Y1 = CVLO(A1, C1, 0xB1);  Y2 = CVLO(A2, C2, 0xB1);  Y3 = CVLO(A3, C3, 0xB1);  Y4 = CVLO(A4, C4, 0xB1);  Y5 = CVLO(A5, C5, 0xB1);  Y6 = CVLO(A6, C6, 0xB1);  Y7 = CVLO(A7, C7, 0xB1);
+
+  STORE(state0 + 0, X0);  STORE(state1 + 0, X1);  STORE(state2 + 0, X2);  STORE(state3 + 0, X3);  STORE(state4 + 0, X4);  STORE(state5 + 0, X5);  STORE(state6 + 0, X6);  STORE(state7 + 0, X7);
+  STORE(state0 + 1, Y0);  STORE(state1 + 1, Y1);  STORE(state2 + 1, Y2);  STORE(state3 + 1, Y3);  STORE(state4 + 1, Y4);  STORE(state5 + 1, Y5);  STORE(state6 + 1, Y6);  STORE(state7 + 1, Y7);
+}
+
+
+void __update_shani_4x(
     uint32_t *state_0,    const uint8_t *data_0,
     uint32_t *state_1,    const uint8_t *data_1,
     uint32_t *state_2,    const uint8_t *data_2,
@@ -622,7 +752,7 @@ void update_shani_4x(
   STORE(state_3 + 1, T1_3);
 }
 
-void update_shani_8x(uint32_t *state_0,
+void __update_shani_8x(uint32_t *state_0,
                      const uint8_t *data_0,
                      uint32_t *state_1,
                      const uint8_t *data_1,

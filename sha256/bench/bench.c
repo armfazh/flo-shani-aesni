@@ -22,7 +22,7 @@
 #include <cpuid/flo-cpuid.h>
 #include "clocks.h"
 
-#define MAX_SIZE_BITS 21
+#define MAX_SIZE_BITS 7
 
 struct seqTimings {
   uint64_t size;
@@ -180,6 +180,7 @@ void bench_1w() {
 
 int main(void) {
   machine_info();
+  openssl_version();
   printf("== Start of Benchmark ===\n");
   bench_1w();
   bench_Nw();
