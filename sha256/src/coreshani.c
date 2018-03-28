@@ -13,8 +13,7 @@
 #define MSG2(X, Y)   _mm_sha256msg2_epu32(X,Y)
 #define CVLO(X, Y, Z) _mm_shuffle_epi32(_mm_unpacklo_epi64(X,Y),Z)
 #define CVHI(X, Y, Z) _mm_shuffle_epi32(_mm_unpackhi_epi64(X,Y),Z)
-#define L2B(X)      _mm_shuffle_epi8(X,_mm_set_epi32( \
-  0x0c0d0e0f,0x08090a0b,0x04050607,0x00010203))
+#define L2B(X)      _mm_shuffle_epi8(X,MASK)
 
 static const ALIGN uint64_t CONST_K[32] = {
     0x71374491428A2F98, 0xE9B5DBA5B5C0FBCF,
@@ -337,7 +336,8 @@ void julio(uint32_t state[8], const uint8_t *msg, uint32_t num_blocks) {
 }
 
 void update_shani(uint32_t *state, const uint8_t *msg, uint32_t num_blocks) {
-  int i, j, i1, i2, i3;
+  const __m128i MASK = _mm_set_epi32(0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203);
+  int i, j;
   __m128i A0, C0, ABEF, CDGH, X0, Y0, Ki, W0[4];
 
   X0 = LOAD(state + 0);
@@ -359,19 +359,16 @@ void update_shani(uint32_t *state, const uint8_t *msg, uint32_t num_blocks) {
       A0 = SHA(A0, C0, Y0);
     }
     for (j = 1; j < 4; j++) {
-      for (i = 0, i1 = 1, i2 = 2, i3 = 3; i < 4; i++) {
+      for (i = 0; i < 4; i++) {
         Ki = LOAD(CONST_K + 4 * j + i);
-        X0 = MSG1(W0[i], W0[i1]);
-        Y0 = ALIGNR(W0[i3], W0[i2]);
+        X0 = MSG1(W0[i], W0[(i + 1) % 4]);
+        Y0 = ALIGNR(W0[(i + 3) % 4], W0[(i + 2) % 4]);
         X0 = ADD(X0, Y0);
-        W0[i] = MSG2(X0, W0[i3]);
+        W0[i] = MSG2(X0, W0[(i + 3) % 4]);
         X0 = ADD(W0[i], Ki);
         Y0 = HIGH(X0);
         C0 = SHA(C0, A0, X0);
         A0 = SHA(A0, C0, Y0);
-        i1 = i2;
-        i2 = i3;
-        i3 = i;
       }
     }
 
@@ -393,7 +390,8 @@ void update_shani_2x(
     uint32_t *state0, const uint8_t *msg0,
     uint32_t *state1, const uint8_t *msg1,
     uint32_t num_blocks) {
-  int i, j, i1, i2, i3;
+  const __m128i MASK = _mm_set_epi32(0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203);
+  int i, j;//, i1, i2, i3;
   __m128i Ki;
   __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
   __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
@@ -427,16 +425,16 @@ void update_shani_2x(
       A1 = SHA(A1, C1, Y1);
     }
     for (j = 1; j < 4; j++) {
-      for (i = 0, i1 = 1, i2 = 2, i3 = 3; i < 4; i++) {
+      for (i = 0; i < 4; i++) {
         Ki = LOAD(CONST_K + 4 * j + i);
-        X0 = MSG1(W0[i], W0[i1]);
-        X1 = MSG1(W1[i], W1[i1]);
-        Y0 = ALIGNR(W0[i3], W0[i2]);
-        Y1 = ALIGNR(W1[i3], W1[i2]);
+        X0 = MSG1(W0[i], W0[(i+1)%4]);
+        X1 = MSG1(W1[i], W1[(i+1)%4]);
+        Y0 = ALIGNR(W0[(i+3)%4], W0[(i+2)%4]);
+        Y1 = ALIGNR(W1[(i+3)%4], W1[(i+2)%4]);
         X0 = ADD(X0, Y0);
         X1 = ADD(X1, Y1);
-        W0[i] = MSG2(X0, W0[i3]);
-        W1[i] = MSG2(X1, W1[i3]);
+        W0[i] = MSG2(X0, W0[(i+3)%4]);
+        W1[i] = MSG2(X1, W1[(i+3)%4]);
         X0 = ADD(W0[i], Ki);
         X1 = ADD(W1[i], Ki);
         Y0 = HIGH(X0);
@@ -445,9 +443,9 @@ void update_shani_2x(
         C1 = SHA(C1, A1, X1);
         A0 = SHA(A0, C0, Y0);
         A1 = SHA(A1, C1, Y1);
-        i1 = i2;
-        i2 = i3;
-        i3 = i;
+//        i1 = i2;
+//        i2 = i3;
+//        i3 = i;
       }
     }
 
@@ -471,13 +469,14 @@ void update_shani_2x(
   STORE(state1 + 1, Y1);
 }
 
-void update_shani_4x(
+void __update_shani_4x(
     uint32_t *state0, const uint8_t *msg0,
     uint32_t *state1, const uint8_t *msg1,
     uint32_t *state2, const uint8_t *msg2,
     uint32_t *state3, const uint8_t *msg3,
     uint32_t num_blocks) {
-  int i, j, i1, i2, i3;
+  const __m128i MASK = _mm_set_epi32(0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203);
+  int i, j;//, i1, i2, i3;
   __m128i Ki;
   __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
   __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
@@ -502,19 +501,19 @@ void update_shani_4x(
       A0 = SHA(A0, C0, Y0);               A1 = SHA(A1, C1, Y1);            A2 = SHA(A2, C2, Y2);               A3 = SHA(A3, C3, Y3);
     }
     for (j = 1; j < 4; j++) {
-      for (i = 0, i1 = 1, i2 = 2, i3 = 3; i < 4; i++) {
+      for (i = 0; i < 4; i++) {
         Ki = LOAD(CONST_K + 4 * j + i);
-        X0 = MSG1(W0[i], W0[i1]);        X1 = MSG1(W1[i], W1[i1]);      X2 = MSG1(W2[i], W2[i1]);        X3 = MSG1(W3[i], W3[i1]);
-        Y0 = ALIGNR(W0[i3], W0[i2]);     Y1 = ALIGNR(W1[i3], W1[i2]);   Y2 = ALIGNR(W2[i3], W2[i2]);     Y3 = ALIGNR(W3[i3], W3[i2]);
+        X0 = MSG1(W0[i], W0[(i + 1) % 4]);        X1 = MSG1(W1[i], W1[(i + 1) % 4]);      X2 = MSG1(W2[i], W2[(i + 1) % 4]);        X3 = MSG1(W3[i], W3[(i + 1) % 4]);
+        Y0 = ALIGNR(W0[(i + 3) % 4], W0[(i + 2) % 4]);     Y1 = ALIGNR(W1[(i + 3) % 4], W1[(i + 2) % 4]);   Y2 = ALIGNR(W2[(i + 3) % 4], W2[(i + 2) % 4]);     Y3 = ALIGNR(W3[(i + 3) % 4], W3[(i + 2) % 4]);
         X0 = ADD(X0, Y0);                X1 = ADD(X1, Y1);              X2 = ADD(X2, Y2);                X3 = ADD(X3, Y3);
-        W0[i] = MSG2(X0, W0[i3]);        W1[i] = MSG2(X1, W1[i3]);      W2[i] = MSG2(X2, W2[i3]);        W3[i] = MSG2(X3, W3[i3]);
+        W0[i] = MSG2(X0, W0[(i + 3) % 4]);        W1[i] = MSG2(X1, W1[(i + 3) % 4]);      W2[i] = MSG2(X2, W2[(i + 3) % 4]);        W3[i] = MSG2(X3, W3[(i + 3) % 4]);
         X0 = ADD(W0[i], Ki);             X1 = ADD(W1[i], Ki);           X2 = ADD(W2[i], Ki);             X3 = ADD(W3[i], Ki);
-        Y0 = HIGH(X0);                   Y1 = HIGH(X1);                 Y2 = HIGH(X2);                   Y3 = HIGH(X3);
         C0 = SHA(C0, A0, X0);            C1 = SHA(C1, A1, X1);          C2 = SHA(C2, A2, X2);            C3 = SHA(C3, A3, X3);
+        Y0 = HIGH(X0);                   Y1 = HIGH(X1);                 Y2 = HIGH(X2);                   Y3 = HIGH(X3);
         A0 = SHA(A0, C0, Y0);            A1 = SHA(A1, C1, Y1);          A2 = SHA(A2, C2, Y2);            A3 = SHA(A3, C3, Y3);
-        i1 = i2;
-        i2 = i3;
-        i3 = i;
+//        i1 = i2;
+//        i2 = i3;
+//        i3 = i;
       }
     }
 
@@ -542,16 +541,20 @@ void update_shani_8x(
     uint32_t *state6, const uint8_t *msg6,
     uint32_t *state7, const uint8_t *msg7,
     uint32_t num_blocks) {
+  const __m128i MASK = _mm_set_epi32(0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203);
   int i, j, i1, i2, i3;
   __m128i Ki;
-  __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
-  __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
-  __m128i A2, C2, ABEF2, CDGH2, X2, Y2, W2[4];
-  __m128i A3, C3, ABEF3, CDGH3, X3, Y3, W3[4];
-  __m128i A4, C4, ABEF4, CDGH4, X4, Y4, W4[4];
-  __m128i A5, C5, ABEF5, CDGH5, X5, Y5, W5[4];
-  __m128i A6, C6, ABEF6, CDGH6, X6, Y6, W6[4];
-  __m128i A7, C7, ABEF7, CDGH7, X7, Y7, W7[4];
+  __m128i A0, C0, ABEF0, CDGH0, X0, Y0;
+  __m128i A1, C1, ABEF1, CDGH1, X1, Y1;
+  __m128i A2, C2, ABEF2, CDGH2, X2, Y2;
+  __m128i A3, C3, ABEF3, CDGH3, X3, Y3;
+  __m128i A4, C4, ABEF4, CDGH4, X4, Y4;
+  __m128i A5, C5, ABEF5, CDGH5, X5, Y5;
+  __m128i A6, C6, ABEF6, CDGH6, X6, Y6;
+  __m128i A7, C7, ABEF7, CDGH7, X7, Y7;
+
+  __m128i W0[4], W1[4], W2[4], W3[4], W4[4], W5[4], W6[4], W7[4];
+
 
   X0 = LOAD(state0 + 0);    X1 = LOAD(state1 + 0);    X2 = LOAD(state2 + 0);    X3 = LOAD(state3 + 0);    X4 = LOAD(state4 + 0);    X5 = LOAD(state5 + 0);    X6 = LOAD(state6 + 0);    X7 = LOAD(state7 + 0);
   Y0 = LOAD(state0 + 1);    Y1 = LOAD(state1 + 1);    Y2 = LOAD(state2 + 1);    Y3 = LOAD(state3 + 1);    Y4 = LOAD(state4 + 1);    Y5 = LOAD(state5 + 1);    Y6 = LOAD(state6 + 1);    Y7 = LOAD(state7 + 1);
@@ -601,129 +604,125 @@ void update_shani_8x(
 }
 
 
-void __update_shani_4x(
-    uint32_t *state_0,    const uint8_t *data_0,
-    uint32_t *state_1,    const uint8_t *data_1,
-    uint32_t *state_2,    const uint8_t *data_2,
-    uint32_t *state_3,    const uint8_t *data_3,
+void update_shani_4x(
+    uint32_t *state_0,  const uint8_t *data_0,
+    uint32_t *state_1,  const uint8_t *data_1,
+    uint32_t *state_2,  const uint8_t *data_2,
+    uint32_t *state_3,  const uint8_t *data_3,
     uint32_t num_blocks) {
   const __m128i MASK = _mm_set_epi32(0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203);
 
-  int i, j;
-  __m128i S0_0, S1_0, S0_2, S1_2;
-  __m128i S0_1, S1_1, S0_3, S1_3;
-  __m128i ABEF_0, CDGH_0, ABEF_2, CDGH_2;
-  __m128i ABEF_1, CDGH_1, ABEF_3, CDGH_3;
-  __m128i T0_0, T0_1, T0_2, T0_3;
-  __m128i T1_0, T1_1, T1_2, T1_3;
-  __m128i TMSG_0[4], TMSG_2[4];
-  __m128i TMSG_1[4], TMSG_3[4];
-  __m128i cte;
+  uint8_t i, j;
+  __m128i Ki;
+  __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
+  __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
+  __m128i A2, C2, ABEF2, CDGH2, X2, Y2, W2[4];
+  __m128i A3, C3, ABEF3, CDGH3, X3, Y3, W3[4];
 
-  T0_0 = LOAD(state_0 + 0);
-  T1_0 = LOAD(state_0 + 1);
-  T0_1 = LOAD(state_1 + 0);
-  T1_1 = LOAD(state_1 + 1);
-  T0_2 = LOAD(state_2 + 0);
-  T1_2 = LOAD(state_2 + 1);
-  T0_3 = LOAD(state_3 + 0);
-  T1_3 = LOAD(state_3 + 1);
+  X0 = LOAD(state_0 + 0);
+  Y0 = LOAD(state_0 + 1);
+  X1 = LOAD(state_1 + 0);
+  Y1 = LOAD(state_1 + 1);
+  X2 = LOAD(state_2 + 0);
+  Y2 = LOAD(state_2 + 1);
+  X3 = LOAD(state_3 + 0);
+  Y3 = LOAD(state_3 + 1);
 
   /* DCBA -> ABEF */
   /* HGFE -> CDGH */
-  S0_0 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_0, T1_0), 0x1B);
-  S1_0 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_0, T1_0), 0x1B);
-  S0_1 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_1, T1_1), 0x1B);
-  S1_1 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_1, T1_1), 0x1B);
-  S0_2 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_2, T1_2), 0x1B);
-  S1_2 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_2, T1_2), 0x1B);
-  S0_3 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_3, T1_3), 0x1B);
-  S1_3 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_3, T1_3), 0x1B);
+  A0 = CVLO(X0, Y0, 0x1B);
+  C0 = CVHI(X0, Y0, 0x1B);
+  A1 = CVLO(X1, Y1, 0x1B);
+  C1 = CVHI(X1, Y1, 0x1B);
+  A2 = CVLO(X2, Y2, 0x1B);
+  C2 = CVHI(X2, Y2, 0x1B);
+  A3 = CVLO(X3, Y3, 0x1B);
+  C3 = CVHI(X3, Y3, 0x1B);
 
   while (num_blocks > 0) {
-    ABEF_0 = S0_0;
-    CDGH_0 = S1_0;
-    ABEF_1 = S0_1;
-    CDGH_1 = S1_1;
-    ABEF_2 = S0_2;
-    CDGH_2 = S1_2;
-    ABEF_3 = S0_3;
-    CDGH_3 = S1_3;
+    ABEF0 = A0;
+    CDGH0 = C0;
+    ABEF1 = A1;
+    CDGH1 = C1;
+    ABEF2 = A2;
+    CDGH2 = C2;
+    ABEF3 = A3;
+    CDGH3 = C3;
 
     for (i = 0; i < 4; i++) {
-      cte = LOAD(CONST_K + i);
-      TMSG_0[i] = LOAD_U(data_0 + i);
-      TMSG_1[i] = LOAD_U(data_1 + i);
-      TMSG_2[i] = LOAD_U(data_2 + i);
-      TMSG_3[i] = LOAD_U(data_3 + i);
-      TMSG_0[i] = _mm_shuffle_epi8(TMSG_0[i], MASK);
-      TMSG_1[i] = _mm_shuffle_epi8(TMSG_1[i], MASK);
-      TMSG_2[i] = _mm_shuffle_epi8(TMSG_2[i], MASK);
-      TMSG_3[i] = _mm_shuffle_epi8(TMSG_3[i], MASK);
-      T0_0 = ADD(TMSG_0[i], cte);
-      T0_1 = ADD(TMSG_1[i], cte);
-      T0_2 = ADD(TMSG_2[i], cte);
-      T0_3 = ADD(TMSG_3[i], cte);
-      T1_0 = _mm_srli_si128(T0_0, 8);
-      T1_1 = _mm_srli_si128(T0_1, 8);
-      T1_2 = _mm_srli_si128(T0_2, 8);
-      T1_3 = _mm_srli_si128(T0_3, 8);
-      S1_0 = _mm_sha256rnds2_epu32(S1_0, S0_0, T0_0);
-      S1_1 = _mm_sha256rnds2_epu32(S1_1, S0_1, T0_1);
-      S1_2 = _mm_sha256rnds2_epu32(S1_2, S0_2, T0_2);
-      S1_3 = _mm_sha256rnds2_epu32(S1_3, S0_3, T0_3);
-      S0_0 = _mm_sha256rnds2_epu32(S0_0, S1_0, T1_0);
-      S0_1 = _mm_sha256rnds2_epu32(S0_1, S1_1, T1_1);
-      S0_2 = _mm_sha256rnds2_epu32(S0_2, S1_2, T1_2);
-      S0_3 = _mm_sha256rnds2_epu32(S0_3, S1_3, T1_3);
+      Ki = LOAD(CONST_K + i);
+      W0[i] = LOAD_U(data_0 + i);
+      W1[i] = LOAD_U(data_1 + i);
+      W2[i] = LOAD_U(data_2 + i);
+      W3[i] = LOAD_U(data_3 + i);
+      W0[i] = L2B(W0[i]);
+      W1[i] = L2B(W1[i]);
+      W2[i] = L2B(W2[i]);
+      W3[i] = L2B(W3[i]);
+      X0 = ADD(W0[i], Ki);
+      X1 = ADD(W1[i], Ki);
+      X2 = ADD(W2[i], Ki);
+      X3 = ADD(W3[i], Ki);
+      Y0 = HIGH(X0);
+      Y1 = HIGH(X1);
+      Y2 = HIGH(X2);
+      Y3 = HIGH(X3);
+      C0 = SHA(C0, A0, X0);
+      C1 = SHA(C1, A1, X1);
+      C2 = SHA(C2, A2, X2);
+      C3 = SHA(C3, A3, X3);
+      A0 = SHA(A0, C0, Y0);
+      A1 = SHA(A1, C1, Y1);
+      A2 = SHA(A2, C2, Y2);
+      A3 = SHA(A3, C3, Y3);
     }
 
     for (j = 1; j < 4; j++) {
       for (i = 0; i < 4; i++) {
-        cte = LOAD(CONST_K + 4 * j + i);
-        T0_0 = _mm_sha256msg1_epu32(TMSG_0[i], TMSG_0[(i + 1) % 4]);
-        T0_1 = _mm_sha256msg1_epu32(TMSG_1[i], TMSG_1[(i + 1) % 4]);
-        T0_2 = _mm_sha256msg1_epu32(TMSG_2[i], TMSG_2[(i + 1) % 4]);
-        T0_3 = _mm_sha256msg1_epu32(TMSG_3[i], TMSG_3[(i + 1) % 4]);
-        T1_0 = ALIGNR(TMSG_0[(i + 3) % 4], TMSG_0[(i + 2) % 4]);
-        T1_1 = ALIGNR(TMSG_1[(i + 3) % 4], TMSG_1[(i + 2) % 4]);
-        T1_2 = ALIGNR(TMSG_2[(i + 3) % 4], TMSG_2[(i + 2) % 4]);
-        T1_3 = ALIGNR(TMSG_3[(i + 3) % 4], TMSG_3[(i + 2) % 4]);
-        T0_0 = ADD(T0_0, T1_0);
-        T0_1 = ADD(T0_1, T1_1);
-        T0_2 = ADD(T0_2, T1_2);
-        T0_3 = ADD(T0_3, T1_3);
-        TMSG_0[i] = _mm_sha256msg2_epu32(T0_0, TMSG_0[(i + 3) % 4]);
-        TMSG_1[i] = _mm_sha256msg2_epu32(T0_1, TMSG_1[(i + 3) % 4]);
-        TMSG_2[i] = _mm_sha256msg2_epu32(T0_2, TMSG_2[(i + 3) % 4]);
-        TMSG_3[i] = _mm_sha256msg2_epu32(T0_3, TMSG_3[(i + 3) % 4]);
-        T0_0 = ADD(TMSG_0[i], cte);
-        T0_1 = ADD(TMSG_1[i], cte);
-        T0_2 = ADD(TMSG_2[i], cte);
-        T0_3 = ADD(TMSG_3[i], cte);
-        S1_0 = _mm_sha256rnds2_epu32(S1_0, S0_0, T0_0);
-        S1_1 = _mm_sha256rnds2_epu32(S1_1, S0_1, T0_1);
-        S1_2 = _mm_sha256rnds2_epu32(S1_2, S0_2, T0_2);
-        S1_3 = _mm_sha256rnds2_epu32(S1_3, S0_3, T0_3);
-        T1_0 = _mm_srli_si128(T0_0, 8);
-        T1_1 = _mm_srli_si128(T0_1, 8);
-        T1_2 = _mm_srli_si128(T0_2, 8);
-        T1_3 = _mm_srli_si128(T0_3, 8);
-        S0_0 = _mm_sha256rnds2_epu32(S0_0, S1_0, T1_0);
-        S0_1 = _mm_sha256rnds2_epu32(S0_1, S1_1, T1_1);
-        S0_2 = _mm_sha256rnds2_epu32(S0_2, S1_2, T1_2);
-        S0_3 = _mm_sha256rnds2_epu32(S0_3, S1_3, T1_3);
+        Ki = LOAD(CONST_K + 4 * j + i);
+        X0 = MSG1(W0[i], W0[(i + 1) % 4]);
+        X1 = MSG1(W1[i], W1[(i + 1) % 4]);
+        X2 = MSG1(W2[i], W2[(i + 1) % 4]);
+        X3 = MSG1(W3[i], W3[(i + 1) % 4]);
+        Y0 = ALIGNR(W0[(i + 3) % 4], W0[(i + 2) % 4]);
+        Y1 = ALIGNR(W1[(i + 3) % 4], W1[(i + 2) % 4]);
+        Y2 = ALIGNR(W2[(i + 3) % 4], W2[(i + 2) % 4]);
+        Y3 = ALIGNR(W3[(i + 3) % 4], W3[(i + 2) % 4]);
+        X0 = ADD(X0, Y0);
+        X1 = ADD(X1, Y1);
+        X2 = ADD(X2, Y2);
+        X3 = ADD(X3, Y3);
+        W0[i] = MSG2(X0, W0[(i + 3) % 4]);
+        W1[i] = MSG2(X1, W1[(i + 3) % 4]);
+        W2[i] = MSG2(X2, W2[(i + 3) % 4]);
+        W3[i] = MSG2(X3, W3[(i + 3) % 4]);
+        X0 = ADD(W0[i], Ki);
+        X1 = ADD(W1[i], Ki);
+        X2 = ADD(W2[i], Ki);
+        X3 = ADD(W3[i], Ki);
+        C0 = SHA(C0, A0, X0);
+        C1 = SHA(C1, A1, X1);
+        C2 = SHA(C2, A2, X2);
+        C3 = SHA(C3, A3, X3);
+        Y0 = HIGH(X0);
+        Y1 = HIGH(X1);
+        Y2 = HIGH(X2);
+        Y3 = HIGH(X3);
+        A0 = SHA(A0, C0, Y0);
+        A1 = SHA(A1, C1, Y1);
+        A2 = SHA(A2, C2, Y2);
+        A3 = SHA(A3, C3, Y3);
       }
     }
 
-    S0_0 = ADD(S0_0, ABEF_0);
-    S0_1 = ADD(S0_1, ABEF_1);
-    S0_2 = ADD(S0_2, ABEF_2);
-    S0_3 = ADD(S0_3, ABEF_3);
-    S1_0 = ADD(S1_0, CDGH_0);
-    S1_1 = ADD(S1_1, CDGH_1);
-    S1_2 = ADD(S1_2, CDGH_2);
-    S1_3 = ADD(S1_3, CDGH_3);
+    A0 = ADD(A0, ABEF0);
+    A1 = ADD(A1, ABEF1);
+    A2 = ADD(A2, ABEF2);
+    A3 = ADD(A3, ABEF3);
+    C0 = ADD(C0, CDGH0);
+    C1 = ADD(C1, CDGH1);
+    C2 = ADD(C2, CDGH2);
+    C3 = ADD(C3, CDGH3);
 
     data_0 += 64;
     data_1 += 64;
@@ -733,272 +732,254 @@ void __update_shani_4x(
   }
   /* ABEF -> DCBA */
   /* CDGH -> HGFE */
-  T0_0 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_0, S1_0), 0xB1);
-  T1_0 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_0, S1_0), 0xB1);
-  T0_1 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_1, S1_1), 0xB1);
-  T1_1 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_1, S1_1), 0xB1);
-  T0_2 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_2, S1_2), 0xB1);
-  T1_2 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_2, S1_2), 0xB1);
-  T0_3 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_3, S1_3), 0xB1);
-  T1_3 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_3, S1_3), 0xB1);
+  X0 = CVHI(A0, C0, 0xB1);
+  Y0 = CVLO(A0, C0, 0xB1);
+  X1 = CVHI(A1, C1, 0xB1);
+  Y1 = CVLO(A1, C1, 0xB1);
+  X2 = CVHI(A2, C2, 0xB1);
+  Y2 = CVLO(A2, C2, 0xB1);
+  X3 = CVHI(A3, C3, 0xB1);
+  Y3 = CVLO(A3, C3, 0xB1);
 
-  STORE(state_0 + 0, T0_0);
-  STORE(state_0 + 1, T1_0);
-  STORE(state_1 + 0, T0_1);
-  STORE(state_1 + 1, T1_1);
-  STORE(state_2 + 0, T0_2);
-  STORE(state_2 + 1, T1_2);
-  STORE(state_3 + 0, T0_3);
-  STORE(state_3 + 1, T1_3);
+  STORE(state_0 + 0, X0);
+  STORE(state_0 + 1, Y0);
+  STORE(state_1 + 0, X1);
+  STORE(state_1 + 1, Y1);
+  STORE(state_2 + 0, X2);
+  STORE(state_2 + 1, Y2);
+  STORE(state_3 + 0, X3);
+  STORE(state_3 + 1, Y3);
 }
 
-void __update_shani_8x(uint32_t *state_0,
-                     const uint8_t *data_0,
-                     uint32_t *state_1,
-                     const uint8_t *data_1,
-                     uint32_t *state_2,
-                     const uint8_t *data_2,
-                     uint32_t *state_3,
-                     const uint8_t *data_3,
-                     uint32_t *state_4,
-                     const uint8_t *data_4,
-                     uint32_t *state_5,
-                     const uint8_t *data_5,
-                     uint32_t *state_6,
-                     const uint8_t *data_6,
-                     uint32_t *state_7,
-                     const uint8_t *data_7,
-                     uint32_t num_blocks) {
+void __update_shani_8x(
+    uint32_t *state_0, const uint8_t *data_0,
+    uint32_t *state_1, const uint8_t *data_1,
+    uint32_t *state_2, const uint8_t *data_2,
+    uint32_t *state_3, const uint8_t *data_3,
+    uint32_t *state_4, const uint8_t *data_4,
+    uint32_t *state_5, const uint8_t *data_5,
+    uint32_t *state_6, const uint8_t *data_6,
+    uint32_t *state_7, const uint8_t *data_7,
+    uint32_t num_blocks) {
   const __m128i MASK = _mm_set_epi32(0x0c0d0e0f, 0x08090a0b, 0x04050607, 0x00010203);
 
   int i, j;
-  __m128i S0_0, S1_0, S0_2, S1_2;
-  __m128i S0_1, S1_1, S0_3, S1_3;
-  __m128i S0_4, S1_4, S0_6, S1_6;
-  __m128i S0_5, S1_5, S0_7, S1_7;
+  __m128i Ki;
+  __m128i A0, C0, ABEF0, CDGH0, X0, Y0, W0[4];
+  __m128i A1, C1, ABEF1, CDGH1, X1, Y1, W1[4];
+  __m128i A2, C2, ABEF2, CDGH2, X2, Y2, W2[4];
+  __m128i A3, C3, ABEF3, CDGH3, X3, Y3, W3[4];
+  __m128i A4, C4, ABEF4, CDGH4, X4, Y4, W4[4];
+  __m128i A5, C5, ABEF5, CDGH5, X5, Y5, W5[4];
+  __m128i A6, C6, ABEF6, CDGH6, X6, Y6, W6[4];
+  __m128i A7, C7, ABEF7, CDGH7, X7, Y7, W7[4];
 
-  __m128i ABEF_0, CDGH_0, ABEF_2, CDGH_2;
-  __m128i ABEF_1, CDGH_1, ABEF_3, CDGH_3;
-  __m128i ABEF_4, CDGH_4, ABEF_6, CDGH_6;
-  __m128i ABEF_5, CDGH_5, ABEF_7, CDGH_7;
-
-  __m128i T0_0, T0_1, T0_2, T0_3, T0_4, T0_5, T0_6, T0_7;
-  __m128i T1_0, T1_1, T1_2, T1_3, T1_4, T1_5, T1_6, T1_7;
-
-  __m128i TMSG_0[4], TMSG_2[4];
-  __m128i TMSG_1[4], TMSG_3[4];
-  __m128i TMSG_4[4], TMSG_6[4];
-  __m128i TMSG_5[4], TMSG_7[4];
-
-  __m128i cte;
-
-  T0_0 = LOAD(state_0 + 0);
-  T1_0 = LOAD(state_0 + 1);
-  T0_1 = LOAD(state_1 + 0);
-  T1_1 = LOAD(state_1 + 1);
-  T0_2 = LOAD(state_2 + 0);
-  T1_2 = LOAD(state_2 + 1);
-  T0_3 = LOAD(state_3 + 0);
-  T1_3 = LOAD(state_3 + 1);
-  T0_4 = LOAD(state_4 + 0);
-  T1_4 = LOAD(state_4 + 1);
-  T0_5 = LOAD(state_5 + 0);
-  T1_5 = LOAD(state_5 + 1);
-  T0_6 = LOAD(state_6 + 0);
-  T1_6 = LOAD(state_6 + 1);
-  T0_7 = LOAD(state_7 + 0);
-  T1_7 = LOAD(state_7 + 1);
+  X0 = LOAD(state_0 + 0);
+  Y0 = LOAD(state_0 + 1);
+  X1 = LOAD(state_1 + 0);
+  Y1 = LOAD(state_1 + 1);
+  X2 = LOAD(state_2 + 0);
+  Y2 = LOAD(state_2 + 1);
+  X3 = LOAD(state_3 + 0);
+  Y3 = LOAD(state_3 + 1);
+  X4 = LOAD(state_4 + 0);
+  Y4 = LOAD(state_4 + 1);
+  X5 = LOAD(state_5 + 0);
+  Y5 = LOAD(state_5 + 1);
+  X6 = LOAD(state_6 + 0);
+  Y6 = LOAD(state_6 + 1);
+  X7 = LOAD(state_7 + 0);
+  Y7 = LOAD(state_7 + 1);
 
   /* DCBA -> ABEF */
   /* HGFE -> CDGH */
-  S0_0 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_0, T1_0), 0x1B);
-  S1_0 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_0, T1_0), 0x1B);
-  S0_1 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_1, T1_1), 0x1B);
-  S1_1 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_1, T1_1), 0x1B);
-  S0_2 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_2, T1_2), 0x1B);
-  S1_2 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_2, T1_2), 0x1B);
-  S0_3 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_3, T1_3), 0x1B);
-  S1_3 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_3, T1_3), 0x1B);
-
-  S0_4 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_4, T1_4), 0x1B);
-  S1_4 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_4, T1_4), 0x1B);
-  S0_5 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_5, T1_5), 0x1B);
-  S1_5 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_5, T1_5), 0x1B);
-  S0_6 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_6, T1_6), 0x1B);
-  S1_6 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_6, T1_6), 0x1B);
-  S0_7 = _mm_shuffle_epi32(_mm_unpacklo_epi64(T0_7, T1_7), 0x1B);
-  S1_7 = _mm_shuffle_epi32(_mm_unpackhi_epi64(T0_7, T1_7), 0x1B);
+  A0 = CVLO(X0, Y0, 0x1B);
+  C0 = CVHI(X0, Y0, 0x1B);
+  A1 = CVLO(X1, Y1, 0x1B);
+  C1 = CVHI(X1, Y1, 0x1B);
+  A2 = CVLO(X2, Y2, 0x1B);
+  C2 = CVHI(X2, Y2, 0x1B);
+  A3 = CVLO(X3, Y3, 0x1B);
+  C3 = CVHI(X3, Y3, 0x1B);
+  A4 = CVLO(X4, Y4, 0x1B);
+  C4 = CVHI(X4, Y4, 0x1B);
+  A5 = CVLO(X5, Y5, 0x1B);
+  C5 = CVHI(X5, Y5, 0x1B);
+  A6 = CVLO(X6, Y6, 0x1B);
+  C6 = CVHI(X6, Y6, 0x1B);
+  A7 = CVLO(X7, Y7, 0x1B);
+  C7 = CVHI(X7, Y7, 0x1B);
 
   while (num_blocks > 0) {
-    ABEF_0 = S0_0;
-    ABEF_1 = S0_1;
-    ABEF_2 = S0_2;
-    ABEF_3 = S0_3;
-    ABEF_4 = S0_4;
-    ABEF_5 = S0_5;
-    ABEF_6 = S0_6;
-    ABEF_7 = S0_7;
-    CDGH_0 = S1_0;
-    CDGH_1 = S1_1;
-    CDGH_2 = S1_2;
-    CDGH_3 = S1_3;
-    CDGH_4 = S1_4;
-    CDGH_5 = S1_5;
-    CDGH_6 = S1_6;
-    CDGH_7 = S1_7;
+    ABEF0 = A0;
+    ABEF1 = A1;
+    ABEF2 = A2;
+    ABEF3 = A3;
+    ABEF4 = A4;
+    ABEF5 = A5;
+    ABEF6 = A6;
+    ABEF7 = A7;
+    CDGH0 = C0;
+    CDGH1 = C1;
+    CDGH2 = C2;
+    CDGH3 = C3;
+    CDGH4 = C4;
+    CDGH5 = C5;
+    CDGH6 = C6;
+    CDGH7 = C7;
 
     for (i = 0; i < 4; i++) {
-      cte = LOAD(CONST_K + i);
-      TMSG_0[i] = LOAD_U(data_0 + i);
-      TMSG_1[i] = LOAD_U(data_1 + i);
-      TMSG_2[i] = LOAD_U(data_2 + i);
-      TMSG_3[i] = LOAD_U(data_3 + i);
-      TMSG_4[i] = LOAD_U(data_4 + i);
-      TMSG_5[i] = LOAD_U(data_5 + i);
-      TMSG_6[i] = LOAD_U(data_6 + i);
-      TMSG_7[i] = LOAD_U(data_7 + i);
+      Ki = LOAD(CONST_K + i);
+      W0[i] = LOAD_U(data_0 + i);
+      W1[i] = LOAD_U(data_1 + i);
+      W2[i] = LOAD_U(data_2 + i);
+      W3[i] = LOAD_U(data_3 + i);
+      W4[i] = LOAD_U(data_4 + i);
+      W5[i] = LOAD_U(data_5 + i);
+      W6[i] = LOAD_U(data_6 + i);
+      W7[i] = LOAD_U(data_7 + i);
 
-      TMSG_0[i] = _mm_shuffle_epi8(TMSG_0[i], MASK);
-      TMSG_1[i] = _mm_shuffle_epi8(TMSG_1[i], MASK);
-      TMSG_2[i] = _mm_shuffle_epi8(TMSG_2[i], MASK);
-      TMSG_3[i] = _mm_shuffle_epi8(TMSG_3[i], MASK);
-      TMSG_4[i] = _mm_shuffle_epi8(TMSG_4[i], MASK);
-      TMSG_5[i] = _mm_shuffle_epi8(TMSG_5[i], MASK);
-      TMSG_6[i] = _mm_shuffle_epi8(TMSG_6[i], MASK);
-      TMSG_7[i] = _mm_shuffle_epi8(TMSG_7[i], MASK);
+      W0[i] = L2B(W0[i]);
+      W1[i] = L2B(W1[i]);
+      W2[i] = L2B(W2[i]);
+      W3[i] = L2B(W3[i]);
+      W4[i] = L2B(W4[i]);
+      W5[i] = L2B(W5[i]);
+      W6[i] = L2B(W6[i]);
+      W7[i] = L2B(W7[i]);
 
-      T0_0 = ADD(TMSG_0[i], cte);
-      T0_1 = ADD(TMSG_1[i], cte);
-      T0_2 = ADD(TMSG_2[i], cte);
-      T0_3 = ADD(TMSG_3[i], cte);
-      T0_4 = ADD(TMSG_4[i], cte);
-      T0_5 = ADD(TMSG_5[i], cte);
-      T0_6 = ADD(TMSG_6[i], cte);
-      T0_7 = ADD(TMSG_7[i], cte);
+      X0 = ADD(W0[i], Ki);
+      X1 = ADD(W1[i], Ki);
+      X2 = ADD(W2[i], Ki);
+      X3 = ADD(W3[i], Ki);
+      X4 = ADD(W4[i], Ki);
+      X5 = ADD(W5[i], Ki);
+      X6 = ADD(W6[i], Ki);
+      X7 = ADD(W7[i], Ki);
 
-      T1_0 = _mm_srli_si128(T0_0, 8);
-      T1_1 = _mm_srli_si128(T0_1, 8);
-      T1_2 = _mm_srli_si128(T0_2, 8);
-      T1_3 = _mm_srli_si128(T0_3, 8);
-      T1_4 = _mm_srli_si128(T0_4, 8);
-      T1_5 = _mm_srli_si128(T0_5, 8);
-      T1_6 = _mm_srli_si128(T0_6, 8);
-      T1_7 = _mm_srli_si128(T0_7, 8);
+      Y0 = HIGH(X0);
+      Y1 = HIGH(X1);
+      Y2 = HIGH(X2);
+      Y3 = HIGH(X3);
+      Y4 = HIGH(X4);
+      Y5 = HIGH(X5);
+      Y6 = HIGH(X6);
+      Y7 = HIGH(X7);
 
-      S1_0 = _mm_sha256rnds2_epu32(S1_0, S0_0, T0_0);
-      S1_1 = _mm_sha256rnds2_epu32(S1_1, S0_1, T0_1);
-      S1_2 = _mm_sha256rnds2_epu32(S1_2, S0_2, T0_2);
-      S1_3 = _mm_sha256rnds2_epu32(S1_3, S0_3, T0_3);
-      S1_4 = _mm_sha256rnds2_epu32(S1_4, S0_4, T0_4);
-      S1_5 = _mm_sha256rnds2_epu32(S1_5, S0_5, T0_5);
-      S1_6 = _mm_sha256rnds2_epu32(S1_6, S0_6, T0_6);
-      S1_7 = _mm_sha256rnds2_epu32(S1_7, S0_7, T0_7);
+      C0 = SHA(C0, A0, X0);
+      C1 = SHA(C1, A1, X1);
+      C2 = SHA(C2, A2, X2);
+      C3 = SHA(C3, A3, X3);
+      C4 = SHA(C4, A4, X4);
+      C5 = SHA(C5, A5, X5);
+      C6 = SHA(C6, A6, X6);
+      C7 = SHA(C7, A7, X7);
 
-      S0_0 = _mm_sha256rnds2_epu32(S0_0, S1_0, T1_0);
-      S0_1 = _mm_sha256rnds2_epu32(S0_1, S1_1, T1_1);
-      S0_2 = _mm_sha256rnds2_epu32(S0_2, S1_2, T1_2);
-      S0_3 = _mm_sha256rnds2_epu32(S0_3, S1_3, T1_3);
-      S0_4 = _mm_sha256rnds2_epu32(S0_4, S1_4, T1_4);
-      S0_5 = _mm_sha256rnds2_epu32(S0_5, S1_5, T1_5);
-      S0_6 = _mm_sha256rnds2_epu32(S0_6, S1_6, T1_6);
-      S0_7 = _mm_sha256rnds2_epu32(S0_7, S1_7, T1_7);
+      A0 = SHA(A0, C0, Y0);
+      A1 = SHA(A1, C1, Y1);
+      A2 = SHA(A2, C2, Y2);
+      A3 = SHA(A3, C3, Y3);
+      A4 = SHA(A4, C4, Y4);
+      A5 = SHA(A5, C5, Y5);
+      A6 = SHA(A6, C6, Y6);
+      A7 = SHA(A7, C7, Y7);
     }
 
     for (j = 1; j < 4; j++) {
       for (i = 0; i < 4; i++) {
-        cte = LOAD(CONST_K + 4 * j + i);
+        Ki = LOAD(CONST_K + 4 * j + i);
 
-        T0_0 = _mm_sha256msg1_epu32(TMSG_0[i], TMSG_0[(i + 1) % 4]);
-        T0_1 = _mm_sha256msg1_epu32(TMSG_1[i], TMSG_1[(i + 1) % 4]);
-        T0_2 = _mm_sha256msg1_epu32(TMSG_2[i], TMSG_2[(i + 1) % 4]);
-        T0_3 = _mm_sha256msg1_epu32(TMSG_3[i], TMSG_3[(i + 1) % 4]);
-        T0_4 = _mm_sha256msg1_epu32(TMSG_4[i], TMSG_4[(i + 1) % 4]);
-        T0_5 = _mm_sha256msg1_epu32(TMSG_5[i], TMSG_5[(i + 1) % 4]);
-        T0_6 = _mm_sha256msg1_epu32(TMSG_6[i], TMSG_6[(i + 1) % 4]);
-        T0_7 = _mm_sha256msg1_epu32(TMSG_7[i], TMSG_7[(i + 1) % 4]);
+        X0 = MSG1(W0[i], W0[(i + 1) % 4]);
+        X1 = MSG1(W1[i], W1[(i + 1) % 4]);
+        X2 = MSG1(W2[i], W2[(i + 1) % 4]);
+        X3 = MSG1(W3[i], W3[(i + 1) % 4]);
+        X4 = MSG1(W4[i], W4[(i + 1) % 4]);
+        X5 = MSG1(W5[i], W5[(i + 1) % 4]);
+        X6 = MSG1(W6[i], W6[(i + 1) % 4]);
+        X7 = MSG1(W7[i], W7[(i + 1) % 4]);
 
-        T1_0 = ALIGNR(TMSG_0[(i + 3) % 4], TMSG_0[(i + 2) % 4]);
-        T1_1 = ALIGNR(TMSG_1[(i + 3) % 4], TMSG_1[(i + 2) % 4]);
-        T1_2 = ALIGNR(TMSG_2[(i + 3) % 4], TMSG_2[(i + 2) % 4]);
-        T1_3 = ALIGNR(TMSG_3[(i + 3) % 4], TMSG_3[(i + 2) % 4]);
-        T1_4 = ALIGNR(TMSG_4[(i + 3) % 4], TMSG_4[(i + 2) % 4]);
-        T1_5 = ALIGNR(TMSG_5[(i + 3) % 4], TMSG_5[(i + 2) % 4]);
-        T1_6 = ALIGNR(TMSG_6[(i + 3) % 4], TMSG_6[(i + 2) % 4]);
-        T1_7 = ALIGNR(TMSG_7[(i + 3) % 4], TMSG_7[(i + 2) % 4]);
+        Y0 = ALIGNR(W0[(i + 3) % 4], W0[(i + 2) % 4]);
+        Y1 = ALIGNR(W1[(i + 3) % 4], W1[(i + 2) % 4]);
+        Y2 = ALIGNR(W2[(i + 3) % 4], W2[(i + 2) % 4]);
+        Y3 = ALIGNR(W3[(i + 3) % 4], W3[(i + 2) % 4]);
+        Y4 = ALIGNR(W4[(i + 3) % 4], W4[(i + 2) % 4]);
+        Y5 = ALIGNR(W5[(i + 3) % 4], W5[(i + 2) % 4]);
+        Y6 = ALIGNR(W6[(i + 3) % 4], W6[(i + 2) % 4]);
+        Y7 = ALIGNR(W7[(i + 3) % 4], W7[(i + 2) % 4]);
 
-        T0_0 = ADD(T0_0, T1_0);
-        T0_1 = ADD(T0_1, T1_1);
-        T0_2 = ADD(T0_2, T1_2);
-        T0_3 = ADD(T0_3, T1_3);
-        T0_4 = ADD(T0_4, T1_4);
-        T0_5 = ADD(T0_5, T1_5);
-        T0_6 = ADD(T0_6, T1_6);
-        T0_7 = ADD(T0_7, T1_7);
+        X0 = ADD(X0, Y0);
+        X1 = ADD(X1, Y1);
+        X2 = ADD(X2, Y2);
+        X3 = ADD(X3, Y3);
+        X4 = ADD(X4, Y4);
+        X5 = ADD(X5, Y5);
+        X6 = ADD(X6, Y6);
+        X7 = ADD(X7, Y7);
 
-        TMSG_0[i] = _mm_sha256msg2_epu32(T0_0, TMSG_0[(i + 3) % 4]);
-        TMSG_1[i] = _mm_sha256msg2_epu32(T0_1, TMSG_1[(i + 3) % 4]);
-        TMSG_2[i] = _mm_sha256msg2_epu32(T0_2, TMSG_2[(i + 3) % 4]);
-        TMSG_3[i] = _mm_sha256msg2_epu32(T0_3, TMSG_3[(i + 3) % 4]);
-        TMSG_4[i] = _mm_sha256msg2_epu32(T0_4, TMSG_4[(i + 3) % 4]);
-        TMSG_5[i] = _mm_sha256msg2_epu32(T0_5, TMSG_5[(i + 3) % 4]);
-        TMSG_6[i] = _mm_sha256msg2_epu32(T0_6, TMSG_6[(i + 3) % 4]);
-        TMSG_7[i] = _mm_sha256msg2_epu32(T0_7, TMSG_7[(i + 3) % 4]);
+        W0[i] = MSG2(X0, W0[(i + 3) % 4]);
+        W1[i] = MSG2(X1, W1[(i + 3) % 4]);
+        W2[i] = MSG2(X2, W2[(i + 3) % 4]);
+        W3[i] = MSG2(X3, W3[(i + 3) % 4]);
+        W4[i] = MSG2(X4, W4[(i + 3) % 4]);
+        W5[i] = MSG2(X5, W5[(i + 3) % 4]);
+        W6[i] = MSG2(X6, W6[(i + 3) % 4]);
+        W7[i] = MSG2(X7, W7[(i + 3) % 4]);
 
-        T0_0 = ADD(TMSG_0[i], cte);
-        T0_1 = ADD(TMSG_1[i], cte);
-        T0_2 = ADD(TMSG_2[i], cte);
-        T0_3 = ADD(TMSG_3[i], cte);
-        T0_4 = ADD(TMSG_4[i], cte);
-        T0_5 = ADD(TMSG_5[i], cte);
-        T0_6 = ADD(TMSG_6[i], cte);
-        T0_7 = ADD(TMSG_7[i], cte);
+        X0 = ADD(W0[i], Ki);
+        X1 = ADD(W1[i], Ki);
+        X2 = ADD(W2[i], Ki);
+        X3 = ADD(W3[i], Ki);
+        X4 = ADD(W4[i], Ki);
+        X5 = ADD(W5[i], Ki);
+        X6 = ADD(W6[i], Ki);
+        X7 = ADD(W7[i], Ki);
 
-        S1_0 = _mm_sha256rnds2_epu32(S1_0, S0_0, T0_0);
-        S1_1 = _mm_sha256rnds2_epu32(S1_1, S0_1, T0_1);
-        S1_2 = _mm_sha256rnds2_epu32(S1_2, S0_2, T0_2);
-        S1_3 = _mm_sha256rnds2_epu32(S1_3, S0_3, T0_3);
-        S1_4 = _mm_sha256rnds2_epu32(S1_4, S0_4, T0_4);
-        S1_5 = _mm_sha256rnds2_epu32(S1_5, S0_5, T0_5);
-        S1_6 = _mm_sha256rnds2_epu32(S1_6, S0_6, T0_6);
-        S1_7 = _mm_sha256rnds2_epu32(S1_7, S0_7, T0_7);
+        C0 = SHA(C0, A0, X0);
+        C1 = SHA(C1, A1, X1);
+        C2 = SHA(C2, A2, X2);
+        C3 = SHA(C3, A3, X3);
+        C4 = SHA(C4, A4, X4);
+        C5 = SHA(C5, A5, X5);
+        C6 = SHA(C6, A6, X6);
+        C7 = SHA(C7, A7, X7);
 
-        T1_0 = _mm_srli_si128(T0_0, 8);
-        T1_1 = _mm_srli_si128(T0_1, 8);
-        T1_2 = _mm_srli_si128(T0_2, 8);
-        T1_3 = _mm_srli_si128(T0_3, 8);
-        T1_4 = _mm_srli_si128(T0_4, 8);
-        T1_5 = _mm_srli_si128(T0_5, 8);
-        T1_6 = _mm_srli_si128(T0_6, 8);
-        T1_7 = _mm_srli_si128(T0_7, 8);
+        Y0 = HIGH(X0);
+        Y1 = HIGH(X1);
+        Y2 = HIGH(X2);
+        Y3 = HIGH(X3);
+        Y4 = HIGH(X4);
+        Y5 = HIGH(X5);
+        Y6 = HIGH(X6);
+        Y7 = HIGH(X7);
 
-        S0_0 = _mm_sha256rnds2_epu32(S0_0, S1_0, T1_0);
-        S0_1 = _mm_sha256rnds2_epu32(S0_1, S1_1, T1_1);
-        S0_2 = _mm_sha256rnds2_epu32(S0_2, S1_2, T1_2);
-        S0_3 = _mm_sha256rnds2_epu32(S0_3, S1_3, T1_3);
-        S0_4 = _mm_sha256rnds2_epu32(S0_4, S1_4, T1_4);
-        S0_5 = _mm_sha256rnds2_epu32(S0_5, S1_5, T1_5);
-        S0_6 = _mm_sha256rnds2_epu32(S0_6, S1_6, T1_6);
-        S0_7 = _mm_sha256rnds2_epu32(S0_7, S1_7, T1_7);
+        A0 = SHA(A0, C0, Y0);
+        A1 = SHA(A1, C1, Y1);
+        A2 = SHA(A2, C2, Y2);
+        A3 = SHA(A3, C3, Y3);
+        A4 = SHA(A4, C4, Y4);
+        A5 = SHA(A5, C5, Y5);
+        A6 = SHA(A6, C6, Y6);
+        A7 = SHA(A7, C7, Y7);
       }
     }
 
-    S0_0 = ADD(S0_0, ABEF_0);
-    S0_1 = ADD(S0_1, ABEF_1);
-    S0_2 = ADD(S0_2, ABEF_2);
-    S0_3 = ADD(S0_3, ABEF_3);
-    S0_4 = ADD(S0_4, ABEF_4);
-    S0_5 = ADD(S0_5, ABEF_5);
-    S0_6 = ADD(S0_6, ABEF_6);
-    S0_7 = ADD(S0_7, ABEF_7);
+    A0 = ADD(A0, ABEF0);
+    A1 = ADD(A1, ABEF1);
+    A2 = ADD(A2, ABEF2);
+    A3 = ADD(A3, ABEF3);
+    A4 = ADD(A4, ABEF4);
+    A5 = ADD(A5, ABEF5);
+    A6 = ADD(A6, ABEF6);
+    A7 = ADD(A7, ABEF7);
 
-    S1_0 = ADD(S1_0, CDGH_0);
-    S1_1 = ADD(S1_1, CDGH_1);
-    S1_2 = ADD(S1_2, CDGH_2);
-    S1_3 = ADD(S1_3, CDGH_3);
-    S1_4 = ADD(S1_4, CDGH_4);
-    S1_5 = ADD(S1_5, CDGH_5);
-    S1_6 = ADD(S1_6, CDGH_6);
-    S1_7 = ADD(S1_7, CDGH_7);
+    C0 = ADD(C0, CDGH0);
+    C1 = ADD(C1, CDGH1);
+    C2 = ADD(C2, CDGH2);
+    C3 = ADD(C3, CDGH3);
+    C4 = ADD(C4, CDGH4);
+    C5 = ADD(C5, CDGH5);
+    C6 = ADD(C6, CDGH6);
+    C7 = ADD(C7, CDGH7);
 
     data_0 += 64;
     data_1 += 64;
@@ -1012,40 +993,38 @@ void __update_shani_8x(uint32_t *state_0,
   }
   /* ABEF -> DCBA */
   /* CDGH -> HGFE */
-  T0_0 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_0, S1_0), 0xB1);
-  T1_0 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_0, S1_0), 0xB1);
-  T0_1 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_1, S1_1), 0xB1);
-  T1_1 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_1, S1_1), 0xB1);
-  T0_2 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_2, S1_2), 0xB1);
-  T1_2 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_2, S1_2), 0xB1);
-  T0_3 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_3, S1_3), 0xB1);
-  T1_3 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_3, S1_3), 0xB1);
+  X0 = CVHI(A0, C0, 0xB1);
+  Y0 = CVLO(A0, C0, 0xB1);
+  X1 = CVHI(A1, C1, 0xB1);
+  Y1 = CVLO(A1, C1, 0xB1);
+  X2 = CVHI(A2, C2, 0xB1);
+  Y2 = CVLO(A2, C2, 0xB1);
+  X3 = CVHI(A3, C3, 0xB1);
+  Y3 = CVLO(A3, C3, 0xB1);
+  X4 = CVHI(A4, C4, 0xB1);
+  Y4 = CVLO(A4, C4, 0xB1);
+  X5 = CVHI(A5, C5, 0xB1);
+  Y5 = CVLO(A5, C5, 0xB1);
+  X6 = CVHI(A6, C6, 0xB1);
+  Y6 = CVLO(A6, C6, 0xB1);
+  X7 = CVHI(A7, C7, 0xB1);
+  Y7 = CVLO(A7, C7, 0xB1);
 
-  T0_4 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_4, S1_4), 0xB1);
-  T1_4 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_4, S1_4), 0xB1);
-  T0_5 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_5, S1_5), 0xB1);
-  T1_5 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_5, S1_5), 0xB1);
-  T0_6 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_6, S1_6), 0xB1);
-  T1_6 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_6, S1_6), 0xB1);
-  T0_7 = _mm_shuffle_epi32(_mm_unpackhi_epi64(S0_7, S1_7), 0xB1);
-  T1_7 = _mm_shuffle_epi32(_mm_unpacklo_epi64(S0_7, S1_7), 0xB1);
-
-  STORE(state_0 + 0, T0_0);
-  STORE(state_0 + 1, T1_0);
-  STORE(state_1 + 0, T0_1);
-  STORE(state_1 + 1, T1_1);
-  STORE(state_2 + 0, T0_2);
-  STORE(state_2 + 1, T1_2);
-  STORE(state_3 + 0, T0_3);
-  STORE(state_3 + 1, T1_3);
-
-  STORE(state_4 + 0, T0_4);
-  STORE(state_4 + 1, T1_4);
-  STORE(state_5 + 0, T0_5);
-  STORE(state_5 + 1, T1_5);
-  STORE(state_6 + 0, T0_6);
-  STORE(state_6 + 1, T1_6);
-  STORE(state_7 + 0, T0_7);
-  STORE(state_7 + 1, T1_7);
+  STORE(state_0 + 0, X0);
+  STORE(state_0 + 1, Y0);
+  STORE(state_1 + 0, X1);
+  STORE(state_1 + 1, Y1);
+  STORE(state_2 + 0, X2);
+  STORE(state_2 + 1, Y2);
+  STORE(state_3 + 0, X3);
+  STORE(state_3 + 1, Y3);
+  STORE(state_4 + 0, X4);
+  STORE(state_4 + 1, Y4);
+  STORE(state_5 + 0, X5);
+  STORE(state_5 + 1, Y5);
+  STORE(state_6 + 0, X6);
+  STORE(state_6 + 1, Y6);
+  STORE(state_7 + 0, X7);
+  STORE(state_7 + 1, Y7);
 }
 

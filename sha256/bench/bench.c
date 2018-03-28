@@ -31,7 +31,7 @@ struct seqTimings {
   uint64_t shani;
 };
 
-struct parallelTimings {
+struct pipelinedTimings {
   uint64_t size;
   uint64_t _1x;
   uint64_t _2x;
@@ -39,7 +39,7 @@ struct parallelTimings {
   uint64_t _8x;
 };
 
-void print_tableParallel(struct parallelTimings *table, int items) {
+void print_tableParallel(struct pipelinedTimings *table, int items) {
   int i;
   printf(" Multiple-message Hashing \n");
   printf("               Speedup  \n");
@@ -124,12 +124,13 @@ do{                                              \
     }                                    \
 }while(0)
 
-void bench_Nw() {
-  struct parallelTimings table[MAX_SIZE_BITS] = {0};
+void bench_Pipelined() {
+  struct pipelinedTimings table[MAX_SIZE_BITS] = {0};
   unsigned char digest[32];
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
 
+  printf("Pipelined Implementations:\n");
   if(hasSHANI()) {
     printf("Running 1x:\n");
     BENCH_SIZE_1W(sha256_update_shani, _1x);
@@ -211,8 +212,8 @@ int main(void) {
   machine_info();
   openssl_version();
   printf("== Start of Benchmark ===\n");
-  bench_1w();
-  bench_Nw();
+//  bench_1w();
+  bench_Pipelined();
   printf("== End of Benchmark =====\n");
   return 0;
 }
