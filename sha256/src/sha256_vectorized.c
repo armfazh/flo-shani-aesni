@@ -38,10 +38,33 @@
     :/* regs */               \
   );
 
+#define ZERO_512            _mm512_setzero_si512()
+#define LOAD_512(X)         _mm512_loadu_si512((__m512i*) X)
+#define STORE_512(X,Y)      _mm512_storeu_si512((__m512i*) X, Y)
+#define AND_512(X,Y)        _mm512_and_si512(X,Y)
+#define ADD_512(X,Y)        _mm512_add_epi32(X,Y)
+#define XOR_512(X,Y)        _mm512_xor_si512(X,Y)
+#define OR_512(X,Y)         _mm512_or_si512(X,Y)
+#define SHL_512(X,Y)        _mm512_slli_epi32(X,Y)
+#define SHR_512(X,Y)        _mm512_srli_epi32(X,Y)
+#define SHUF8_512(X,Y)      _mm512_shuffle_epi8(X,Y)
+#define SET1_32_512(X)	    _mm512_set1_epi32(X)
+#define BROAD_512(X,Y)	      \
+  __asm__ __volatile(         \
+    "vpbroadcastd (%1), %0 ;" \
+    :/* out  */ "=x" (X)      \
+    :/* in   */ "r" (Y)       \
+    :/* regs */               \
+  );
+
 #define BLOCK_SIZE_BYTES (64)
 ALIGN const uint32_t big_endian_128[4] = {0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f};
 ALIGN const uint32_t big_endian_256[8] = {0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f,
                                           0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f};
+ALIGN const uint32_t big_endian_512[16] = {0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f,
+                                           0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f,
+                                           0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f,
+                                           0x00010203,0x04050607,0x08090a0b,0x0c0d0e0f};
 
 #define TRANSPOSE_4WAY(W0, W1, W2, W3)  do{            \
     __m128i a0_b0_a2_b2 = _mm_unpacklo_epi32(W0, W1);  \
@@ -95,6 +118,78 @@ ALIGN const uint32_t big_endian_256[8] = {0x00010203,0x04050607,0x08090a0b,0x0c0
     W7 = h0_h1_h2_h3_h4_h5_h6_h7;                                                                             \
 }while(0)
 
+
+#define TRANSPOSE_16WAY(W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, Wa, Wb, Wc, Wd, We, Wf)  do{                  \
+    __m512i a0_b0_c0_d0_a4_b4_c4_d4 = _mm512_shuffle_i64x2(W0,W4,0x20);                                       \
+    __m512i a1_b1_c1_d1_a5_b5_c5_d5 = _mm512_shuffle_i64x2(W1,W5,0x20);                                       \
+    __m512i a2_b2_c2_d2_a6_b6_c6_d6 = _mm512_shuffle_i64x2(W2,W6,0x20);                                       \
+    __m512i a3_b3_c3_d3_a7_b7_c7_d7 = _mm512_shuffle_i64x2(W3,W7,0x20);                                       \
+                                                                                                              \
+    __m512i a0_a1_b0_b1_a4_a5_b4_b5 = _mm512_unpacklo_epi32(a0_b0_c0_d0_a4_b4_c4_d4,a1_b1_c1_d1_a5_b5_c5_d5); \
+    __m512i a2_a3_b2_b3_a6_a7_b6_b7 = _mm512_unpacklo_epi32(a2_b2_c2_d2_a6_b6_c6_d6,a3_b3_c3_d3_a7_b7_c7_d7); \
+    __m512i c0_c1_d0_d1_c4_c5_d4_d5 = _mm512_unpackhi_epi32(a0_b0_c0_d0_a4_b4_c4_d4,a1_b1_c1_d1_a5_b5_c5_d5); \
+    __m512i c2_c3_d2_d3_c6_c7_d6_d7 = _mm512_unpackhi_epi32(a2_b2_c2_d2_a6_b6_c6_d6,a3_b3_c3_d3_a7_b7_c7_d7); \
+                                                                                                              \
+    __m512i a0_a1_a2_a3_a4_a5_a6_a7 = _mm512_unpacklo_epi64(a0_a1_b0_b1_a4_a5_b4_b5,a2_a3_b2_b3_a6_a7_b6_b7); \
+    __m512i b0_b1_b2_b3_b4_b5_b6_b7 = _mm512_unpackhi_epi64(a0_a1_b0_b1_a4_a5_b4_b5,a2_a3_b2_b3_a6_a7_b6_b7); \
+    __m512i c0_c1_c2_c3_c4_c5_c6_c7 = _mm512_unpacklo_epi64(c0_c1_d0_d1_c4_c5_d4_d5,c2_c3_d2_d3_c6_c7_d6_d7); \
+    __m512i d0_d1_d2_d3_d4_d5_d6_d7 = _mm512_unpackhi_epi64(c0_c1_d0_d1_c4_c5_d4_d5,c2_c3_d2_d3_c6_c7_d6_d7); \
+                                                                                                              \
+    __m512i e0_f0_g0_h0_e4_f4_g4_h4 = _mm512_shuffle_i64x2(W0,W4,0x31);                                       \
+    __m512i e1_f1_g1_h1_e5_f5_g5_h5 = _mm512_shuffle_i64x2(W1,W5,0x31);                                       \
+    __m512i e2_f2_g2_h2_e6_f6_g6_h6 = _mm512_shuffle_i64x2(W2,W6,0x31);                                       \
+    __m512i e3_f3_g3_h3_e7_f7_g7_h7 = _mm512_shuffle_i64x2(W3,W7,0x31);                                       \
+                                                                                                              \
+    __m512i e0_e1_f0_f1_e4_e5_f4_f5 = _mm512_unpacklo_epi32(e0_f0_g0_h0_e4_f4_g4_h4,e1_f1_g1_h1_e5_f5_g5_h5); \
+    __m512i e2_e3_f2_f3_e6_e7_f6_f7 = _mm512_unpacklo_epi32(e2_f2_g2_h2_e6_f6_g6_h6,e3_f3_g3_h3_e7_f7_g7_h7); \
+    __m512i g0_g1_h0_h1_g4_g5_h4_h5 = _mm512_unpackhi_epi32(e0_f0_g0_h0_e4_f4_g4_h4,e1_f1_g1_h1_e5_f5_g5_h5); \
+    __m512i g2_g3_h2_h3_g6_g7_h6_h7 = _mm512_unpackhi_epi32(e2_f2_g2_h2_e6_f6_g6_h6,e3_f3_g3_h3_e7_f7_g7_h7); \
+                                                                                                              \
+    __m512i e0_e1_e2_e3_e4_e5_e6_e7 = _mm512_unpacklo_epi64(e0_e1_f0_f1_e4_e5_f4_f5,e2_e3_f2_f3_e6_e7_f6_f7); \
+    __m512i f0_f1_f2_f3_f4_f5_f6_f7 = _mm512_unpackhi_epi64(e0_e1_f0_f1_e4_e5_f4_f5,e2_e3_f2_f3_e6_e7_f6_f7); \
+    __m512i g0_g1_g2_g3_g4_g5_g6_g7 = _mm512_unpacklo_epi64(g0_g1_h0_h1_g4_g5_h4_h5,g2_g3_h2_h3_g6_g7_h6_h7); \
+    __m512i h0_h1_h2_h3_h4_h5_h6_h7 = _mm512_unpackhi_epi64(g0_g1_h0_h1_g4_g5_h4_h5,g2_g3_h2_h3_g6_g7_h6_h7); \
+                                                                                                              \
+    __m512i a8_b8_c8_d8_ac_bc_cc_dc = _mm512_shuffle_i64x2(W8,Wc,0x20);                                       \
+    __m512i a9_b9_c9_d9_ad_bd_cd_dd = _mm512_shuffle_i64x2(W9,Wd,0x20);                                       \
+    __m512i aa_ba_ca_da_ae_be_ce_de = _mm512_shuffle_i64x2(Wa,We,0x20);                                       \
+    __m512i ab_bb_cb_db_af_bf_cf_df = _mm512_shuffle_i64x2(Wb,Wf,0x20);                                       \
+                                                                                                              \
+    __m512i a8_a9_b8_b9_ac_ad_bc_bd = _mm512_unpacklo_epi32(a8_b8_c8_d8_ac_bc_cc_dc,a9_b9_c9_d9_ad_bd_cd_dd); \
+    __m512i aa_ab_ba_bb_ae_af_be_bf = _mm512_unpacklo_epi32(aa_ba_ca_da_ae_be_ce_de,ab_bb_cb_db_af_bf_cf_df); \
+    __m512i c8_c9_d8_d9_cc_cd_dc_dd = _mm512_unpackhi_epi32(a8_b8_c8_d8_ac_bc_cc_dc,a9_b9_c9_d9_ad_bd_cd_dd); \
+    __m512i ca_cb_da_db_ce_cf_de_df = _mm512_unpackhi_epi32(aa_ba_ca_da_ae_be_ce_de,ab_bb_cb_db_af_bf_cf_df); \
+                                                                                                              \
+    __m512i a8_a9_aa_ab_ac_ad_ae_af = _mm512_unpacklo_epi64(a8_a9_b8_b9_ac_ad_bc_bd,aa_ab_ba_bb_ae_af_be_bf); \
+    __m512i b8_b9_ba_bb_bc_bd_be_bf = _mm512_unpackhi_epi64(a8_a9_b8_b9_ac_ad_bc_bd,aa_ab_ba_bb_ae_af_be_bf); \
+    __m512i c8_c9_ca_cb_cc_cd_ce_cf = _mm512_unpacklo_epi64(c8_c9_d8_d9_cc_cd_dc_dd,ca_cb_da_db_ce_cf_de_df); \
+    __m512i d8_d9_da_db_dc_dd_de_df = _mm512_unpackhi_epi64(c8_c9_d8_d9_cc_cd_dc_dd,ca_cb_da_db_ce_cf_de_df); \
+                                                                                                              \
+    __m512i e8_f8_g8_h8_ec_fc_gc_hc = _mm512_shuffle_i64x2(W8,Wc,0x31);                                       \
+    __m512i e9_f9_g9_h9_ed_fd_gd_hd = _mm512_shuffle_i64x2(W9,Wd,0x31);                                       \
+    __m512i ea_fa_ga_ha_ee_fe_ge_he = _mm512_shuffle_i64x2(Wa,We,0x31);                                       \
+    __m512i eb_fb_gb_hb_ef_ff_gf_hf = _mm512_shuffle_i64x2(Wb,Wf,0x31);                                       \
+                                                                                                              \
+    __m512i e8_e9_f8_f9_ec_ed_fc_fd = _mm512_unpacklo_epi32(e8_f8_g8_h8_ec_fc_gc_hc,e9_f9_g9_h9_ed_fd_gd_hd); \
+    __m512i ea_eb_fa_fb_ee_ef_fe_ff = _mm512_unpacklo_epi32(ea_fa_ga_ha_ee_fe_ge_he,eb_fb_gb_hb_ef_ff_gf_hf); \
+    __m512i g8_g9_h8_h9_gc_gd_hc_hd = _mm512_unpackhi_epi32(e8_f8_g8_h8_ec_fc_gc_hc,e9_f9_g9_h9_ed_fd_gd_hd); \
+    __m512i ga_gb_ha_hb_ge_gf_he_hf = _mm512_unpackhi_epi32(ea_fa_ga_ha_ee_fe_ge_he,eb_fb_gb_hb_ef_ff_gf_hf); \
+                                                                                                              \
+    __m512i e8_e9_ea_eb_ec_ed_ee_ef = _mm512_unpacklo_epi64(e8_e9_f8_f9_ec_ed_fc_fd,ea_eb_fa_fb_ee_ef_fe_ff); \
+    __m512i f8_f9_fa_fb_fc_fd_fe_ff = _mm512_unpackhi_epi64(e8_e9_f8_f9_ec_ed_fc_fd,ea_eb_fa_fb_ee_ef_fe_ff); \
+    __m512i g8_g9_ga_gb_gc_gd_ge_gf = _mm512_unpacklo_epi64(g8_g9_h8_h9_gc_gd_hc_hd,ga_gb_ha_hb_ge_gf_he_hf); \
+    __m512i h8_h9_ha_hb_hc_hd_he_hf = _mm512_unpackhi_epi64(g8_g9_h8_h9_gc_gd_hc_hd,ga_gb_ha_hb_ge_gf_he_hf); \
+                                                                                                              \
+    W0 = a0_a1_a2_a3_a4_a5_a6_a7;         W8 = a8_a9_aa_ab_ac_ad_ae_af;                                       \
+    W1 = b0_b1_b2_b3_b4_b5_b6_b7;         W9 = b8_b9_ba_bb_bc_bd_be_bf;                                       \
+    W2 = c0_c1_c2_c3_c4_c5_c6_c7;         Wa = c8_c9_ca_cb_cc_cd_ce_cf;                                       \
+    W3 = d0_d1_d2_d3_d4_d5_d6_d7;         Wb = d8_d9_da_db_dc_dd_de_df;                                       \
+    W4 = e0_e1_e2_e3_e4_e5_e6_e7;         Wc = e8_e9_ea_eb_ec_ed_ee_ef;                                       \
+    W5 = f0_f1_f2_f3_f4_f5_f6_f7;         Wd = f8_f9_fa_fb_fc_fd_fe_ff;                                       \
+    W6 = g0_g1_g2_g3_g4_g5_g6_g7;         We = g8_g9_ga_gb_gc_gd_ge_gf;                                       \
+    W7 = h0_h1_h2_h3_h4_h5_h6_h7;         Wf = h8_h9_ha_hb_hc_hd_he_hf;                                       \
+}while(0)
+
 static inline void transpose_state_128(__m128i *w) {
   TRANSPOSE_4WAY(w[0x0], w[0x1], w[0x2], w[0x3]);
   TRANSPOSE_4WAY(w[0x4], w[0x5], w[0x6], w[0x7]);
@@ -106,6 +201,7 @@ static inline void transpose_msg_128(__m128i *w) {
   TRANSPOSE_4WAY(w[0x8], w[0x9], w[0xa], w[0xb]);
   TRANSPOSE_4WAY(w[0xc], w[0xd], w[0xe], w[0xf]);
 }
+
 static inline void transpose_state_256(__m256i *w) {
   TRANSPOSE_8WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7]);
 }
@@ -113,6 +209,15 @@ static inline void transpose_state_256(__m256i *w) {
 static inline void transpose_msg_256(__m256i *w) {
   TRANSPOSE_8WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7]);
   TRANSPOSE_8WAY(w[0x8], w[0x9], w[0xa], w[0xb], w[0xc], w[0xd], w[0xe], w[0xf]);
+}
+
+static inline void transpose_state_512(__m512i *w) {
+//  TRANSPOSE_16WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7]);
+}
+
+static inline void transpose_msg_512(__m512i *w) {
+  TRANSPOSE_16WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7],
+                  w[0x8], w[0x9], w[0xa], w[0xb], w[0xc], w[0xd], w[0xe], w[0xf]);
 }
 
 #define def_initialize(TYPE)                \
@@ -359,8 +464,9 @@ void sha256_ ## NUM ## w(         \
   def_computeT2(TYPE)            \
   def_msg_schedule(TYPE)         \
   def_sha256_permutation(TYPE)   \
-  def_sha256_vec_256b(NUM,TYPE)  \
+  /*def_sha256_vec_256b(NUM,TYPE) */ \
   sha256_Nw(NUM,TYPE)
 
 define_sha256(4,128)
 define_sha256(8,256)
+define_sha256(16,512)

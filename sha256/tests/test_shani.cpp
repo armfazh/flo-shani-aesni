@@ -203,3 +203,13 @@ TEST(SHA256, MULTI_8x_VEC) {
   } while (k < TEST_TIMES);
   ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
 }
+
+TEST(SHA256, MULTI_16x_VEC) {
+  int k = 0;
+  long ret = 0;
+  do {
+    COMPARE_MULTI(SHA256, sha256_16w, k, 16);
+    k++;
+  } while (k < TEST_TIMES);
+  ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
+}

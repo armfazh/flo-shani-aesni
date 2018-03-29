@@ -106,6 +106,7 @@ dec_sha256_vec_256b(8);
 /* For 256-bit input messages */
 dec_sha256_Nw(4);
 dec_sha256_Nw(8);
+dec_sha256_Nw(16);
 
 #ifdef __cplusplus
 }
