@@ -154,7 +154,7 @@ do{                                             \
 	if(i_count == NUM) {ret++;}                 \
 }while(0)
 
-TEST(SHA256, MULTI_2x) {
+TEST(SHA256, MULTI_2x_PIPE) {
   int k = 0;
   long ret=0;
   do {
@@ -164,7 +164,7 @@ TEST(SHA256, MULTI_2x) {
   ASSERT_EQ(ret,TEST_TIMES) << "want:\n " ;
 }
 
-TEST(SHA256, MULTI_4x) {
+TEST(SHA256, MULTI_4x_PIPE) {
   int k = 0;
   long ret=0;
   do {
@@ -174,11 +174,31 @@ TEST(SHA256, MULTI_4x) {
   ASSERT_EQ(ret,TEST_TIMES) << "want:\n " ;
 }
 
-TEST(SHA256, MULTI_8x) {
+TEST(SHA256, MULTI_8x_PIPE) {
   int k = 0;
   long ret=0;
   do {
     COMPARE_MULTI(SHA256, sha256_x8_update_shani_8x,k,8);
+    k++;
+  } while (k < TEST_TIMES);
+  ASSERT_EQ(ret,TEST_TIMES) << "want:\n " ;
+}
+
+TEST(SHA256, MULTI_4x_VEC) {
+  int k = 0;
+  long ret=0;
+  do {
+    COMPARE_MULTI(SHA256, sha256_4w,k,4);
+    k++;
+  } while (k < TEST_TIMES);
+  ASSERT_EQ(ret,TEST_TIMES) << "want:\n " ;
+}
+
+TEST(SHA256, MULTI_8x_VEC) {
+  int k = 0;
+  long ret=0;
+  do {
+    COMPARE_MULTI(SHA256, sha256_8w,k,8);
     k++;
   } while (k < TEST_TIMES);
   ASSERT_EQ(ret,TEST_TIMES) << "want:\n " ;
