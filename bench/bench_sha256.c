@@ -46,6 +46,7 @@ struct parallelTimings {
   uint64_t _2x;
   uint64_t _4x;
   uint64_t _8x;
+  uint64_t _16x;
 };
 
 void print_tablePipelined(struct parallelTimings *table, int items) {
@@ -101,11 +102,12 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
   printf("╠═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║\n",
+    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
            table[i].size,
            table[i]._1x / (double) table[i].size / 1.0,
            table[i]._4x / (double) table[i].size / 4.0,
-           table[i]._8x / (double) table[i].size / 8.0);
+           table[i]._8x / (double) table[i].size / 8.0,
+           table[i]._16x / (double) table[i].size / 16.0);
   }
   printf("╚═════════╩═════════╩═════════╩═════════╝\n");
   printf("                 Speedup  \n");
@@ -113,11 +115,12 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
   printf("╠═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║\n",
+    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
            table[i].size,
            1.0 * table[i]._1x / (double) table[i]._1x,
            4.0 * table[i]._1x / (double) table[i]._4x,
-           8.0 * table[i]._1x /(double) table[i]._8x);
+           8.0 * table[i]._1x / (double) table[i]._8x,
+           16.0 * table[i]._1x / (double) table[i]._16x);
   }
   printf("╚═════════╩═════════╩═════════╩═════════╝\n");
 
@@ -126,11 +129,12 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
   printf("╠═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║\n",
+    printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║%8.2f%%║\n",
            table[i].size,
            100.0 * (1 - table[i]._1x / ((double) table[i]._1x * 1.0)),
            100.0 * (1 - table[i]._4x / ((double) table[i]._1x * 4.0)),
-           100.0 * (1 - table[i]._8x / ((double) table[i]._1x * 8.0)));
+           100.0 * (1 - table[i]._8x / ((double) table[i]._1x * 8.0)),
+           100.0 * (1 - table[i]._16x / ((double) table[i]._1x * 16.0)));
   }
   printf("╚═════════╩═════════╩═════════╩═════════╝\n");
 }
@@ -268,6 +272,8 @@ void bench_Vectorized(){
   BENCH_SIZE_NW(sha256_4w, 4);
   printf("Running 8x:\n");
   BENCH_SIZE_NW(sha256_8w, 8);
+  printf("Running 16x:\n");
+  BENCH_SIZE_NW(sha256_16w, 16);
   print_tableVectorized(table, MAX_SIZE_BITS);
 }
 
