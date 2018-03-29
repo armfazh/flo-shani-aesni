@@ -97,7 +97,7 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
            table[i]._4x / (double) table[i].size / 4.0,
            table[i]._8x / (double) table[i].size / 8.0);
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
   printf("                 Speedup  \n");
   printf("╔═════════╦═════════╦═════════╦═════════╗\n");
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
