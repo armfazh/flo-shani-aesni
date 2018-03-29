@@ -375,6 +375,16 @@ void sha256_vec_ ## NUM ## 256b (      \
   }                                    \
 }
 
+#define store_digest_128(TYPE) \
+    STORE_ ## TYPE(digest[msg] + 0, SHUF8_ ## TYPE(state[msg + 0], big_endian));\
+    STORE_ ## TYPE(digest[msg] + 1, SHUF8_ ## TYPE(state[msg + 4], big_endian));
+
+#define store_digest_256(TYPE) \
+    STORE_ ## TYPE(digest[msg], SHUF8_ ## TYPE(state[msg+0], big_endian));\
+
+#define store_digest_512(TYPE) \
+  _mm512_mask_store_epi64(digest[msg], (__mmask8)0x0f,SHUF8_ ## TYPE(state[0], big_endian));
+
 
 #define sha256_Nw(NUM,TYPE)       \
 void sha256_ ## NUM ## w(         \
@@ -452,9 +462,7 @@ void sha256_ ## NUM ## w(         \
   }\
   transpose_state_ ## TYPE(state);\
   for (msg = 0; msg < NUM; msg++) {\
-    for (b = 0; b < (8/(NUM)); b++) {\
-      STORE_ ## TYPE(digest[msg] + b, SHUF8_ ## TYPE(state[NUM*b+msg], big_endian));\
-    }\
+    store_digest_ ## TYPE(TYPE) \
   }\
 }
 
