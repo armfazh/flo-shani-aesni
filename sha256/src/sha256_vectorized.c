@@ -1,6 +1,5 @@
 #include "shani.h"
 
-
 #define ZERO_128            _mm_setzero_si128()
 #define LOAD_128(X)         _mm_loadu_si128((__m128i*) X)
 #define STORE_128(X,Y)      _mm_storeu_si128((__m128i*) X, Y)
@@ -115,6 +114,7 @@ static inline void transpose_msg_256(__m256i *w) {
   TRANSPOSE_8WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7]);
   TRANSPOSE_8WAY(w[0x8], w[0x9], w[0xa], w[0xb], w[0xc], w[0xd], w[0xe], w[0xf]);
 }
+
 #define def_initialize(TYPE)                \
 static inline void initialize_ ## TYPE(     \
   __m ## TYPE ## i state[8]) {              \
@@ -207,10 +207,10 @@ static inline __m ## TYPE ## i msg_schedule_ ## TYPE( \
   return Wi;                                \
 }
 
-
-#define def_sha256_permutation(TYPE) \
-static inline void sha256_permutation_ ## TYPE( \
-  __m ## TYPE ## i *state, __m ## TYPE ## i *message_block) {   \
+#define def_sha256_permutation(TYPE)                            \
+static inline void sha256_permutation_ ## TYPE(                 \
+  __m ## TYPE ## i *state,                                      \
+  __m ## TYPE ## i *message_block) {                            \
   int i;                                                        \
   __m ## TYPE ## i a, b, c, d, e, f, g, h;                      \
   __m ## TYPE ## i T1, T2, Ki;                                  \
@@ -239,12 +239,11 @@ static inline void sha256_permutation_ ## TYPE( \
   state[6] = ADD_ ## TYPE(state[6], g);  state[7] = ADD_ ## TYPE(state[7], h);  \
 }
 
-
 #define def_sha256_vec_256b(NUM,TYPE)  \
 void sha256_vec_ ## NUM ## 256b (      \
   uint8_t *message[NUM],               \
   uint8_t *digest[NUM]) {              \
-  __m ## TYPE ## i big_endian = LOAD_ ## TYPE(big_endian_ ## TYPE);\
+  __m ## TYPE ## i big_endian = LOAD_ ## TYPE(big_endian_ ## TYPE); \
   int msg = 0;                         \
   unsigned int b = 0;                  \
   ALIGN __m ## TYPE ## i state[8];     \
@@ -256,13 +255,13 @@ void sha256_vec_ ## NUM ## 256b (      \
       block[msg+b] = SHUF8_ ## TYPE(LOAD_ ## TYPE(message[msg] + 4*b), big_endian); \
     }                                  \
   }                                    \
-  block[8] = SET1_32_ ## TYPE(0x80000000);      \
+  block[8] = SET1_32_ ## TYPE(0x80000000);  \
   for (b = 9; b < 15; b++) {           \
     block[b] = ZERO_ ## TYPE;          \
   }                                    \
   block[15] = SET1_32_ ## TYPE(256);   \
   transpose_state_ ## TYPE(state);     \
-  sha256_permutation_ ## TYPE(state, block); \
+  sha256_permutation_ ## TYPE(state, block);  \
   transpose_state_ ## TYPE(state);     \
   for (msg = 0; msg < NUM; msg++) {    \
     for (b = 0; b < ((NUM)/2); b++) {  \
@@ -283,10 +282,9 @@ void sha256_ ## NUM ## w(         \
   const unsigned int remainder_bytes = message_length - (num_blocks << 6);\
   const uint64_t mlen_bits = message_length * 8;\
   ALIGN __m ## TYPE ## i state[8];\
-  ALIGN __m ## TYPE ## i block[64];\
+  ALIGN __m ## TYPE ## i block[BLOCK_SIZE_BYTES];\
   __m ## TYPE ## i big_endian = LOAD_ ## TYPE(big_endian_ ## TYPE); \
-  ALIGN uint8_t buffer[64 * 4] = {0}; \
-\
+  ALIGN uint8_t buffer[BLOCK_SIZE_BYTES*NUM] = {0}; \
   initialize_## TYPE (state);\
   for (b = 0; b < num_blocks; b++) { \
     /* Load a 512-bit message_4x */ \
@@ -299,49 +297,49 @@ void sha256_ ## NUM ## w(         \
     sha256_permutation_ ## TYPE(state, block);\
   }\
   /* Load a remainder of the message_4x */\
-  if (remainder_bytes < 56) {\
+  if (remainder_bytes < 56) { \
     for (msg = 0; msg < NUM; msg++) {\
       for (b = 0; b < remainder_bytes; b++) {\
-        buffer[BLOCK_SIZE_BYTES * msg + b] = message[msg][BLOCK_SIZE_BYTES * num_blocks + b];\
+        buffer[BLOCK_SIZE_BYTES*msg+b] = message[msg][BLOCK_SIZE_BYTES*num_blocks+b];\
       }\
-      buffer[BLOCK_SIZE_BYTES * msg + remainder_bytes] = 0x80;\
+      buffer[BLOCK_SIZE_BYTES*msg+remainder_bytes] = 0x80;\
       for (b = 0; b < 8; b++) {\
-        buffer[BLOCK_SIZE_BYTES * (msg + 1) - b - 1] = (uint8_t) ((mlen_bits >> (8 * b)) & 0xFF);\
+        buffer[BLOCK_SIZE_BYTES*(msg+1)-1-b] = (uint8_t)((mlen_bits>>(8*b))&0xFF);\
       }\
     }\
     for (msg = 0; msg < NUM; msg++) {\
       for (i = 0; i < (16/(NUM)); i++) {\
-        block[msg + NUM * i] = SHUF8_ ## TYPE(LOAD_ ## TYPE(buffer + (16 / (NUM)) * msg + i), big_endian);\
-      }\
+        block[NUM * i + msg ] = SHUF8_ ## TYPE(LOAD_ ## TYPE(buffer + (16 / (NUM)) * msg + i ), big_endian); \
+      } \
     }\
     transpose_msg_ ## TYPE(block);\
     sha256_permutation_ ## TYPE(state, block);\
-  } else if (remainder_bytes < 64) {\
+  } else if (remainder_bytes < 64) { \
     /* Load a 512-bit message_4x */\
     for (msg = 0; msg < NUM; msg++) {\
       for (b = 0; b < remainder_bytes; b++) {\
-        buffer[BLOCK_SIZE_BYTES * msg + b] = message[msg][BLOCK_SIZE_BYTES * num_blocks + b];\
+        buffer[BLOCK_SIZE_BYTES*msg+b] = message[msg][BLOCK_SIZE_BYTES*num_blocks+b];\
       }\
-      buffer[BLOCK_SIZE_BYTES * msg + remainder_bytes] = 0x80;\
+      buffer[BLOCK_SIZE_BYTES*msg+remainder_bytes] = 0x80;\
     }\
     for (msg = 0; msg < NUM; msg++) {\
-      for (b = 0; b < (16/(NUM)); b++) {\
-        block[msg + NUM * b] = SHUF8_ ## TYPE(LOAD_ ## TYPE(buffer + (16 /(NUM)) * msg + b), big_endian);\
+      for (i = 0; i < (16/(NUM)); i++) {\
+        block[NUM *i + msg ] = SHUF8_ ## TYPE(LOAD_ ## TYPE(buffer + (16 / (NUM)) * msg + i ), big_endian); \
       }\
     }\
     transpose_msg_ ## TYPE(block);\
     sha256_permutation_ ## TYPE(state, block);\
     for (msg = 0; msg < NUM; msg++) {\
       for (b = 0; b < 56; b++) {\
-        buffer[BLOCK_SIZE_BYTES * msg + b] = 0x00;\
+        buffer[BLOCK_SIZE_BYTES*msg+b] = 0x00;\
       }\
       for (b = 0; b < 8; b++) {\
-        buffer[BLOCK_SIZE_BYTES * (msg + 1) - b - 1] = (uint8_t) ((mlen_bits >> (8 * b)) & 0xFF);\
+        buffer[BLOCK_SIZE_BYTES*(msg+1)-1-b] = (uint8_t)((mlen_bits>>(8*b))&0xFF);\
       }\
     }\
     for (msg = 0; msg < NUM; msg++) {\
-      for (b = 0; b < (16/(NUM)); b++) {\
-        block[msg + NUM * b] = SHUF8_ ## TYPE(LOAD_ ## TYPE(buffer + (16 / (NUM)) * msg + b), big_endian);\
+      for (i = 0; i < (16/(NUM)); i++) {\
+        block[NUM * i + msg ] = SHUF8_ ## TYPE(LOAD_ ## TYPE(buffer + (16 / (NUM)) * msg + i ), big_endian); \
       }\
     }\
     transpose_msg_ ## TYPE(block);\
@@ -349,8 +347,8 @@ void sha256_ ## NUM ## w(         \
   }\
   transpose_state_ ## TYPE(state);\
   for (msg = 0; msg < NUM; msg++) {\
-    for (b = 0; b < ((NUM)/2); b++) {\
-      STORE_ ## TYPE(digest[msg] + b, SHUF8_ ## TYPE(state[msg+4*b], big_endian));\
+    for (b = 0; b < (8/(NUM)); b++) {\
+      STORE_ ## TYPE(digest[msg] + b, SHUF8_ ## TYPE(state[NUM*b+msg], big_endian));\
     }\
   }\
 }

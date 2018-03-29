@@ -87,7 +87,7 @@ SHA_X2_CORE_DEF(update_shani_2x)
 SHA_X4_CORE_DEF(update_shani_4x)
 SHA_X8_CORE_DEF(update_shani_8x)
 
-extern const ALIGN uint64_t CONST_K[32];
+extern const ALIGN uint32_t CONST_K[64];
 
 #define dec_sha256_vec_256b(NUM)  \
 void sha256_vec_ ## NUM ## 256b ( \

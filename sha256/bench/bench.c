@@ -262,6 +262,42 @@ void bench_Vectorized(){
   print_tableVectorized(table, MAX_SIZE_BITS);
 }
 
+//#include <string.h>
+//#define N 4
+//void tests(){
+//  const int SIZE=189;
+//  int it,c=0;
+//  uint8_t *message[N];
+//  uint8_t *digest0[N];
+//  uint8_t *digest1[N];
+//  for(it=0;it<N;it++) {
+//    message[it] = (uint8_t*)_mm_malloc(SIZE+1,ALIGN_BYTES);
+//    digest0[it] = (uint8_t*)_mm_malloc(32,ALIGN_BYTES);
+//    digest1[it] = (uint8_t*)_mm_malloc(32,ALIGN_BYTES);
+//    random_bytes(message[it],SIZE);
+////    strncpy((char*)message[it],"abc",SIZE);
+////    strncpy((char*)message[it],"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",SIZE);
+//    strncpy((char*)message[it],"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopqabcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopqabcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopqabcdbcdecdefdefgijkij",SIZE);
+//  }
+//
+//  sha256_4w(message,SIZE,digest0);
+//  for(it=0;it<N;it++){
+//    SHA256((const unsigned char*)message[it],SIZE,digest1[it]);
+//    c += (memcmp(digest0[it],digest1[it],32)==0);
+////    printf("%d@ ",it);print_hex_bytes(digest1[it],32);
+////    printf("%d> ",it);print_hex_bytes(digest0[it],32);
+//  }
+//  printf("%d@ ",0);print_hex_bytes(digest1[0],32);
+//  printf("%d> ",0);print_hex_bytes(digest0[0],32);
+//  printf("Passed: [%s] %d \n", c==N? "Yes":"No",c);
+//
+//  for(it=0;it<N;it++) {
+//      _mm_free(message[it]);
+//      _mm_free(digest0[it]);
+//      _mm_free(digest1[it]);
+//    }
+//}
+
 int main(void) {
   machine_info();
   openssl_version();
