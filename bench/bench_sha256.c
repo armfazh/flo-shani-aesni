@@ -26,7 +26,7 @@
  * Maximum size of the message to be hashed: 2^MAX_SIZE_BITS.
  * E.g. for hashing messages of 4096 bytes, set MAX_SIZE_BITS to 13.
  */
-#define MAX_SIZE_BITS 13
+#define MAX_SIZE_BITS 21
 
 struct seqTimings {
   uint64_t size;
@@ -300,7 +300,7 @@ void print_tablePipelined(struct parallelTimings *table, int items) {
 }
 
 void bench_Pipelined() {
-  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0} };
+  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0,0} };
   unsigned char digest[32];
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
@@ -323,10 +323,25 @@ void bench_Pipelined() {
 
 void print_tableVectorized(struct parallelTimings *table, int items) {
   int i;
-  printf("            Cycles per byte \n");
+
+  printf("            Cycles  \n");
   printf("╔═════════╦═════════╦═════════╦═════════╗\n");
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
   printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  for (i = 0; i < items; i++) {
+    printf("║%9ld║%9ld║%9ld║%9ld║%9ld║\n",
+           table[i].size,
+           table[i]._1x ,
+           table[i]._4x ,
+           table[i]._8x ,
+           table[i]._16x);
+  }
+  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+
+  printf("            Cycles per byte \n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
     printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
            table[i].size,
@@ -335,11 +350,11 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
            table[i]._8x / (double) table[i].size / 8.0,
            table[i]._16x / (double) table[i].size / 16.0);
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
   printf("                 Speedup  \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
     printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
            table[i].size,
@@ -348,12 +363,12 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
            8.0 * table[i]._1x / (double) table[i]._8x,
            16.0 * table[i]._1x / (double) table[i]._16x);
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
 
   printf("                 Savings \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
     printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║%8.2f%%║\n",
            table[i].size,
@@ -362,7 +377,7 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
            100.0 * (1 - table[i]._8x / ((double) table[i]._1x * 8.0)),
            100.0 * (1 - table[i]._16x / ((double) table[i]._1x * 16.0)));
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
 }
 
 void bench_Vectorized(){
