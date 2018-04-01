@@ -380,7 +380,7 @@ void sha256_vec_ ## NUM ## 256b (      \
     STORE_ ## TYPE(digest[msg] + 1, SHUF8_ ## TYPE(state[msg + 4], big_endian));
 
 #define store_digest_256(TYPE) \
-    STORE_ ## TYPE(digest[msg], SHUF8_ ## TYPE(state[msg+0], big_endian));\
+    STORE_ ## TYPE(digest[msg], SHUF8_ ## TYPE(state[msg], big_endian));\
 
 #define store_digest_512(TYPE) \
   _mm512_mask_store_epi64(digest[msg], (__mmask8)0x0f,SHUF8_ ## TYPE(state[0], big_endian));

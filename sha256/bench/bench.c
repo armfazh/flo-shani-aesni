@@ -183,7 +183,7 @@ void print_tablePipelined(struct parallelTimings *table, int items) {
 }
 
 void bench_Pipelined() {
-  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0} };
+  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0,0} };
   unsigned char digest[32];
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
@@ -206,6 +206,21 @@ void bench_Pipelined() {
 
 void print_tableVectorized(struct parallelTimings *table, int items) {
   int i;
+
+  printf("            Cycles  \n");
+  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  for (i = 0; i < items; i++) {
+    printf("║%9ld║%9ld║%9ld║%9ld║%9ld║\n",
+           table[i].size,
+           table[i]._1x ,
+           table[i]._4x ,
+           table[i]._8x ,
+           table[i]._16x);
+  }
+  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+
   printf("            Cycles per byte \n");
   printf("╔═════════╦═════════╦═════════╦═════════╗\n");
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
@@ -249,7 +264,7 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
 }
 
 void bench_Vectorized(){
-  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0} };
+  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0,0} };
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
   unsigned char digest[32];
@@ -271,9 +286,9 @@ int main(void) {
   machine_info();
   openssl_version();
   printf("== Start of Benchmark ===\n");
-  bench_OpenSSL_vs_SHANI();
+  //bench_OpenSSL_vs_SHANI();
   bench_Vectorized();
-  bench_Pipelined();
+  //bench_Pipelined();
   printf("== End of Benchmark =====\n");
   return 0;
 }

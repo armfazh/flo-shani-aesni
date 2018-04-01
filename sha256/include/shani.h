@@ -5,7 +5,7 @@
 extern "C"{
 #endif
 
-#define ALIGN_BYTES 32
+#define ALIGN_BYTES 64
 #ifdef __INTEL_COMPILER
 #define ALIGN __declspec(align(ALIGN_BYTES))
 #else
