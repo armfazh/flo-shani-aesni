@@ -2,7 +2,7 @@
 
 This project showcase the performance of cryptographic algorithms accelerated using special hardware instructions, such as SHA-NI and AES-NI.
 
-This source code is part of the research work titled: _"How to (pre-)compute a ladder"_ by the authors:
+This source code is part of the research work titled: _"SoK: A Performance Evaluation of Cryptographic Instruction Sets on Modern Architectures"_ by the authors:
  * [Armando Faz-Hernández](http://www.ic.unicamp.br/~armfazh), University of Campinas, Brazil.
  * [Julio López](http://www.ic.unicamp.br/pessoas/docentes/jlopez), University of Campinas, Brazil.
  * [Ana Karina D. S. de Oliveira](http://dblp.uni-trier.de/pers/hd/o/Oliveira:Ana_Karina_D=_S=_de), Federal University of Mato Grosso do Sul,  Brazil.
