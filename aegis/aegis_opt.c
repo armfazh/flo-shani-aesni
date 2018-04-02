@@ -1,20 +1,39 @@
-/*The optimized implementation of AEGIS-128*/
-
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2018 Armando Faz
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 #include "flo-aegis.h"
 #include <string.h>
 
-#define LOAD(X)         _mm_load_si128((__m128i*) X)
-#define STORE(X, Y)      _mm_store_si128((__m128i*) X, Y)
-#define AES(X, Y)        _mm_aesenc_si128(X,Y)
-#define XOR(X, Y)        _mm_xor_si128(X,Y)
+#define LOAD(X)     _mm_load_si128((__m128i*) X)
+#define STORE(X, Y) _mm_store_si128((__m128i*) X, Y)
+#define AES(X, Y)   _mm_aesenc_si128(X,Y)
+#define XOR(X, Y)   _mm_xor_si128(X,Y)
 
+/*The optimized implementation of AEGIS-128*/
 // The initialization state of AEGIS
 static void aegis128_initialization_opt(const unsigned char *key, const unsigned char *iv, __m128i *state) {
   int i;
-  const ALIGN __m128i AEGIS_INIT_0 = _mm_set_epi8(0xdd, 0x28, 0xb5, 0x73, 0x42, 0x31, 0x11, 0x20,
-                                                  0xf1, 0x2f, 0xc2, 0x6d, 0x55, 0x18, 0x3d, 0xdb);
-  const ALIGN __m128i AEGIS_INIT_1 = _mm_set_epi8(0x62, 0x79, 0xe9, 0x90, 0x59, 0x37, 0x22, 0x15,
-                                                  0x0d, 0x08, 0x05, 0x03, 0x02, 0x01, 0x01, 0x00);
+  const ALIGN __m128i AEGIS_INIT_0 = _mm_set_epi32(0xdd28b573, 0x42311120, 0xf12fc26d, 0x55183ddb);
+  const ALIGN __m128i AEGIS_INIT_1 = _mm_set_epi32(0x6279e990, 0x59372215, 0x0d080503, 0x02010100);
   __m128i tmp;
   __m128i keytmp = LOAD(key);
   __m128i ivtmp = LOAD(iv);
@@ -86,25 +105,25 @@ static void aegis128_tag_generation_opt(unsigned long long msglen, unsigned long
   memcpy(mac, t, maclen);
 }
 
-#define aegis128_enc_aut_step_opt(M, C, S)      \
-    __asm__ __volatile__(                    \
-        "vpand %2, %3, %%xmm0         \n\t"  \
-        "vpxor (%5), %1, %%xmm1       \n\t"  \
-        "vpxor %%xmm1, %%xmm0, %%xmm0 \n\t"  \
-        "vpxor %4, %%xmm0, %%xmm0     \n\t"  \
-        "vmovdqa %4, %%xmm1           \n\t"  \
-        "vmovdqa %%xmm0, (%6)         \n\t"  \
-        "vmovdqa %0, %%xmm0           \n\t"  \
-        "vaesenc %4, %3, %4           \n\t"  \
-        "vaesenc %3, %2, %3           \n\t"  \
-        "vaesenc %2, %1, %2           \n\t"  \
-        "vaesenc %1, %0, %1           \n\t"  \
-        "vaesenc (%5), %%xmm1, %0     \n\t"  \
-        "vpxor   %%xmm0, %0, %0       \n\t"  \
-    : "+x"(S[0]),"+x"(S[1]),"+x"(S[2]),"+x"(S[3]),"+x"(S[4])  \
-    : "r"(M), "r"(C)                         \
-    : "memory", "%xmm0", "%xmm1"             \
-    )
+#define aegis128_enc_aut_step_opt(M, C, S) \
+  __asm__ __volatile__(                  \
+    "vpand %2, %3, %%xmm0         \n\t"  \
+    "vpxor (%5), %1, %%xmm1       \n\t"  \
+    "vpxor %%xmm1, %%xmm0, %%xmm0 \n\t"  \
+    "vpxor %4, %%xmm0, %%xmm0     \n\t"  \
+    "vmovdqa %4, %%xmm1           \n\t"  \
+    "vmovdqa %%xmm0, (%6)         \n\t"  \
+    "vmovdqa %0, %%xmm0           \n\t"  \
+    "vaesenc %4, %3, %4           \n\t"  \
+    "vaesenc %3, %2, %3           \n\t"  \
+    "vaesenc %2, %1, %2           \n\t"  \
+    "vaesenc %1, %0, %1           \n\t"  \
+    "vaesenc (%5), %%xmm1, %0     \n\t"  \
+    "vpxor   %%xmm0, %0, %0       \n\t"  \
+  : "+x"(S[0]),"+x"(S[1]),"+x"(S[2]),"+x"(S[3]),"+x"(S[4])  \
+  : "r"(M), "r"(C)                       \
+  : "memory", "%xmm0", "%xmm1"           \
+  )
 
 #define Enc(NN, S1, S2, S3, S4) \
     "vmovdqa " #S2 ", %%xmm1 \n\t" \

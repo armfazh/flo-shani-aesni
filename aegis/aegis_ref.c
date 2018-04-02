@@ -1,3 +1,25 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2018 Armando Faz
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 #include "flo-aegis.h"
 #include <string.h>
 
@@ -11,18 +33,23 @@ static void aegis128_initialization(const unsigned char *key, const unsigned cha
   __m128i ivtmp = _mm_load_si128((__m128i *) iv);
 
   state[0] = ivtmp;
-  state[1] = _mm_set_epi8(0xdd, 0x28, 0xb5, 0x73, 0x42, 0x31, 0x11, 0x20,
-                          0xf1, 0x2f, 0xc2, 0x6d, 0x55, 0x18, 0x3d, 0xdb);
-  state[2] = _mm_set_epi8(0x62, 0x79, 0xe9, 0x90, 0x59, 0x37, 0x22, 0x15,
-                          0x0d, 0x08, 0x05, 0x03, 0x02, 0x01, 0x01, 0x00);
-  state[3] = _mm_xor_si128(keytmp, _mm_set_epi8(0x62, 0x79, 0xe9, 0x90,
-                                                0x59, 0x37, 0x22, 0x15,
-                                                0x0d, 0x08, 0x05, 0x03,
-                                                0x02, 0x01, 0x01, 0x00));
-  state[4] = _mm_xor_si128(keytmp, _mm_set_epi8(0xdd, 0x28, 0xb5, 0x73,
-                                                0x42, 0x31, 0x11, 0x20,
-                                                0xf1, 0x2f, 0xc2, 0x6d,
-                                                0x55, 0x18, 0x3d, 0xdb));
+  state[1] =_mm_set_epi32(0xdd28b573, 0x42311120, 0xf12fc26d, 0x55183ddb);
+//      _mm_set_epi8(0xdd, 0x28, 0xb5, 0x73, 0x42, 0x31, 0x11, 0x20,
+//                   0xf1, 0x2f, 0xc2, 0x6d, 0x55, 0x18, 0x3d, 0xdb);
+  state[2] =_mm_set_epi32(0x6279e990, 0x59372215, 0x0d080503, 0x02010100);
+//      _mm_set_epi8(0x62, 0x79, 0xe9, 0x90, 0x59, 0x37, 0x22, 0x15,
+//                   0x0d, 0x08, 0x05, 0x03, 0x02, 0x01, 0x01, 0x00);
+  state[3] = _mm_xor_si128(keytmp, _mm_set_epi32(0x6279e990,0x59372215,0x0d080503,0x02010100));
+//  state[3] = _mm_xor_si128(keytmp, _mm_set_epi8(0x62, 0x79, 0xe9, 0x90,
+//                                                0x59, 0x37, 0x22, 0x15,
+//                                                0x0d, 0x08, 0x05, 0x03,
+//                                                0x02, 0x01, 0x01, 0x00));
+  state[4] = _mm_xor_si128(keytmp, _mm_set_epi32(0xdd28b573,0x42311120,0xf12fc26d,0x55183ddb));
+//  state[4] = _mm_xor_si128(keytmp, _mm_set_epi8(0xdd, 0x28, 0xb5, 0x73,
+//                                                0x42, 0x31, 0x11, 0x20,
+//                                                0xf1, 0x2f, 0xc2, 0x6d,
+//                                                0x55, 0x18, 0x3d, 0xdb));
+
   state[0] = _mm_xor_si128(state[0], keytmp);
 
   keytmp = _mm_xor_si128(keytmp, ivtmp);
@@ -115,53 +142,6 @@ static void aegis128_enc_aut_step(
     mi = _mm_load_si128((__m128i*)plaintextblk+NN);\
     ci = _mm_xor_si128(_mm_xor_si128(_mm_xor_si128(mi,S1),S4),_mm_and_si128(S2,S3));\
     _mm_store_si128((__m128i*)ciphertextblk+NN,ci);
-
-//four steps of encryption
-static void aegis128_enc_aut_step4(
-    const unsigned char *plaintextblk,
-    unsigned char *ciphertextblk,
-    __m128i *state) {
-  __m128i t0, mi, ci;
-
-  Enc(0, state[1], state[2], state[3], state[4])
-  t0 = state[0];
-  state[0] = _mm_aesenc_si128(state[0], state[1]);
-  state[1] = _mm_aesenc_si128(state[1], state[2]);
-  state[2] = _mm_aesenc_si128(state[2], state[3]);
-  state[3] = _mm_aesenc_si128(state[3], state[4]);
-  Enc(1, state[0], state[1], state[2], state[3])
-  state[4] = _mm_aesenc_si128(state[4], *((const __m128i *) plaintextblk + 0));
-  state[4] = _mm_xor_si128(state[4], t0);
-  t0 = state[0];
-  state[0] = _mm_aesenc_si128(state[0], state[1]);
-  state[1] = _mm_aesenc_si128(state[1], state[2]);
-  state[2] = _mm_aesenc_si128(state[2], state[3]);
-  state[3] = _mm_aesenc_si128(state[3], *((const __m128i *) plaintextblk + 1));
-  state[3] = _mm_xor_si128(state[3], state[4]);
-  state[4] = _mm_aesenc_si128(state[4], t0);
-  Enc(2, state[4], state[0], state[1], state[2])
-  t0 = state[0];
-  state[0] = _mm_aesenc_si128(state[0], state[1]);
-  state[1] = _mm_aesenc_si128(state[1], state[2]);
-  state[2] = _mm_aesenc_si128(state[2], *((const __m128i *) plaintextblk + 2));
-  state[2] = _mm_xor_si128(state[2], state[3]);
-  state[3] = _mm_aesenc_si128(state[3], state[4]);
-  state[4] = _mm_aesenc_si128(state[4], t0);
-  Enc(3, state[3], state[4], state[0], state[1])
-  t0 = state[0];
-  state[0] = _mm_aesenc_si128(state[0], state[1]);
-  state[1] = _mm_aesenc_si128(state[1], *((const __m128i *) plaintextblk + 3));
-  state[1] = _mm_xor_si128(state[1], state[2]);
-  state[2] = _mm_aesenc_si128(state[2], state[3]);
-  state[3] = _mm_aesenc_si128(state[3], state[4]);
-  state[4] = _mm_aesenc_si128(state[4], t0);
-  t0 = state[0];
-  state[0] = state[1];
-  state[1] = state[2];
-  state[2] = state[3];
-  state[3] = state[4];
-  state[4] = t0;
-}
 
 //one step of decryption
 static void aegis128_dec_aut_step(

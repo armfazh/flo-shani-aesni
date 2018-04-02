@@ -1,3 +1,25 @@
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2018 Armando Faz
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 #ifndef PROJECT_AESNI_H
 #define PROJECT_AESNI_H
 
@@ -54,8 +76,7 @@ void AES_CTR_encrypt (const unsigned char *in,
                       const unsigned char *key,
                       const int number_of_rounds);
 
-void
-AES_CTR_encrypt_pipe2(const unsigned char *in,
+void AES_CTR_encrypt_pipe2(const unsigned char *in,
                       unsigned char *out,
                       const unsigned char ivec[8],
                       const unsigned char nonce[4],
@@ -63,8 +84,7 @@ AES_CTR_encrypt_pipe2(const unsigned char *in,
                       const unsigned char *key,
                       const int number_of_rounds);
 
-void
-AES_CTR_encrypt_pipe4(const unsigned char *in,
+void AES_CTR_encrypt_pipe4(const unsigned char *in,
                       unsigned char *out,
                       const unsigned char ivec[8],
                       const unsigned char nonce[4],
@@ -72,8 +92,7 @@ AES_CTR_encrypt_pipe4(const unsigned char *in,
                       const unsigned char *key,
                       const int number_of_rounds);
 
-void
-AES_CTR_encrypt_pipe8(const unsigned char *in,
+void AES_CTR_encrypt_pipe8(const unsigned char *in,
                       unsigned char *out,
                       const unsigned char ivec[8],
                       const unsigned char nonce[4],
@@ -102,82 +121,57 @@ void AES_CBC_decrypt_pipe8(const unsigned char *in,
                            unsigned char *key_schedule,
                            const unsigned int nr);
 
-void
-AES_CBC_encrypt_2w(const unsigned char **in,
+void AES_CBC_encrypt_2w(const unsigned char **in,
                    unsigned char **out,
                    unsigned char **ivec,
                    unsigned long length,
                    const unsigned char *key,
                    const int nr);
 
-void
-AES_CBC_encrypt_4w(const unsigned char **in,
+void AES_CBC_encrypt_4w(const unsigned char **in,
                    unsigned char **out,
                    unsigned char **ivec,
                    unsigned long length,
                    const unsigned char *key,
                    const int nr);
 
-void
-AES_CBC_encrypt_6w(const unsigned char **in,
+void AES_CBC_encrypt_6w(const unsigned char **in,
                    unsigned char **out,
                    unsigned char **ivec,
                    unsigned long length,
                    const unsigned char *key,
                    const int nr);
 
-void
-AES_CBC_encrypt_8w(const unsigned char **in,
+void AES_CBC_encrypt_8w(const unsigned char **in,
                    unsigned char **out,
                    unsigned char **ivec,
                    unsigned long length,
                    const unsigned char *key,
                    const int nr);
 
-void
-AES_CBC_decrypt_2w(const unsigned char *in[2],
+void AES_CBC_decrypt_2w(const unsigned char *in[2],
                    unsigned char *out[2],
                    unsigned char *ivec[2],
                    unsigned long length,
                    unsigned char *key,
                    const int number_of_rounds);
 
-void
-AES_CBC_decrypt_4w(const unsigned char *in[4],
+void AES_CBC_decrypt_4w(const unsigned char *in[4],
                    unsigned char *out[4],
                    unsigned char *ivec[4],
                    unsigned long length,
                    unsigned char *key,
                    const int number_of_rounds);
 
-void
-AES_CBC_decrypt_8w(const unsigned char *in[8],
+void AES_CBC_decrypt_8w(const unsigned char *in[8],
                    unsigned char *out[8],
                    unsigned char *ivec[8],
                    unsigned long length,
                    unsigned char *key,
                    const int number_of_rounds);
 
-void AES_CBC_decrypt_pipe_4w(const unsigned char *in[4],
-                          unsigned char *out[4],
-                          unsigned char *ivec[4],
-                          unsigned long length,
-                          unsigned char *key_schedule,
-                          unsigned int nr);
-
-void orig_AES_CBC_encrypt_parallelize_4_blocks(const unsigned char *in,
-                                               unsigned char *out,
-                                               unsigned char ivec1[16],
-                                               unsigned char ivec2[16],
-                                               unsigned char ivec3[16],
-                                               unsigned char ivec4[16],
-                                               unsigned long length,
-                                               const unsigned char *key,
-                                               int nr);
-
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif //PROJECT_AESNI_H
