@@ -7,6 +7,7 @@ include_directories(/opt/ossl102/include)
 link_directories(/opt/ossl102/lib)
 #library
 add_subdirectory(sha256)
+add_subdirectory(aes)
 
 #Auxiliary code
 add_subdirectory(cpuid)
