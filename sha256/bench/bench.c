@@ -302,9 +302,9 @@ int main(void) {
   machine_info();
   openssl_version();
   printf("== Start of Benchmark ===\n");
-//  bench_OpenSSL_vs_SHANI();
+  bench_OpenSSL_vs_SHANI();
   bench_Vectorized();
-//  bench_Pipelined();
+  bench_Pipelined();
   printf("== End of Benchmark =====\n");
   return 0;
 }

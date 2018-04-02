@@ -344,6 +344,9 @@ static inline void sha256_permutation_ ## TYPE(                 \
   state[6] = ADD_ ## TYPE(state[6], g);  state[7] = ADD_ ## TYPE(state[7], h);  \
 }
 
+/**
+ * [TODO] Hashing messages of 256 bytes.
+ **/
 #define def_sha256_vec_256b(NUM,TYPE)  \
 void sha256_vec_ ## NUM ## 256b (      \
   uint8_t *message[NUM],               \
@@ -469,4 +472,3 @@ void sha256_ ## NUM ## w(         \
 
 define_sha256(4,128)
 define_sha256(8,256)
-define_sha256(16,512)

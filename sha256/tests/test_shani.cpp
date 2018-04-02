@@ -122,6 +122,7 @@ TEST(SHA256, LARGE) {
     _mm_free(message1);
   } while (k < TEST_TIMES);
 }
+
 #define COMPARE_MULTI(FUNC0, FUNC1, MSG_LEN, NUM)  \
 do{                                             \
     int i_multi=0;                              \
@@ -204,12 +205,12 @@ TEST(SHA256, MULTI_8x_VEC) {
   ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
 }
 
-TEST(SHA256, MULTI_16x_VEC) {
-  int k = 0;
-  long ret = 0;
-  do {
-    COMPARE_MULTI(SHA256, sha256_16w, k, 16);
-    k++;
-  } while (k < TEST_TIMES);
-  ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
-}
+//TEST(SHA256, MULTI_16x_VEC) {
+//  int k = 0;
+//  long ret = 0;
+//  do {
+//    COMPARE_MULTI(SHA256, sha256_16w, k, 16);
+//    k++;
+//  } while (k < TEST_TIMES);
+//  ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
+//}
