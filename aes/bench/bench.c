@@ -4,7 +4,6 @@
 #include <cpuid/flo-cpuid.h>
 #include "clocks.h"
 
-
 struct aes_timings {
   uint64_t size;
   uint64_t _1x;

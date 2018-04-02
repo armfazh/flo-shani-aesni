@@ -1,7 +1,3 @@
-//
-// Created by armfazh on 8/25/17.
-//
-
 #ifndef PROJECT_AESNI_H
 #define PROJECT_AESNI_H
 
