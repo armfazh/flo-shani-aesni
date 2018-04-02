@@ -1,4 +1,4 @@
-#include "shani.h"
+#include "flo-shani.h"
 
 #define LOAD(X)       _mm_load_si128((__m128i const *)X)
 #define LOAD_U(X)     _mm_loadu_si128((__m128i const *)X)

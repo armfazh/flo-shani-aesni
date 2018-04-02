@@ -1,4 +1,4 @@
-#include <aesni.h>
+#include "flo-aesni.h"
 
 #define XOR        _mm_xor_si128
 #define AESENC     _mm_aesenc_si128
@@ -6,7 +6,7 @@
 #define AESDEC     _mm_aesdec_si128
 #define AESDECLAST _mm_aesdeclast_si128
 
-inline __m128i AES_128_ASSIST(__m128i temp1, __m128i temp2) {
+static inline __m128i AES_128_ASSIST(__m128i temp1, __m128i temp2) {
   __m128i temp3;
   temp2 = _mm_shuffle_epi32(temp2, 0xff);
   temp3 = _mm_slli_si128(temp1, 0x4);

@@ -67,36 +67,4 @@
 
 #define CLOCKS(FUNCTION) CLOCKS_RANDOM(while (0), FUNCTION)
 
-#define oper_second(RANDOM, LABEL, FUNCTION)                 \
-  do {                                                       \
-    printf("%-8s: ", LABEL);                                 \
-    RANDOM;                                                  \
-                                                             \
-    unsigned i;                                              \
-    uint64_t start, end;                                     \
-    const unsigned iterations = 100000;                      \
-    uint64_t start_c, end_c;                                 \
-                                                             \
-    /* Load the caches*/                                     \
-    for (i = 0; i < 1000; ++i) {                             \
-      FUNCTION;                                              \
-    }                                                        \
-                                                             \
-    start = time_now();                                      \
-    start_c = cycles_now();                                  \
-    for (i = 0; i < iterations; ++i) {                       \
-      FUNCTION;                                              \
-    }                                                        \
-    end = time_now();                                        \
-    end_c = cycles_now();                                    \
-                                                             \
-    printf("%3lu µs, %8.1f oper/s, %6lu cycles/op\n",        \
-           (uint64_t)((end - start) / iterations),      \
-           iterations*(double)1e6 / (end - start),           \
-           (uint64_t)((end_c - start_c) / iterations)); \
-  } while (0)
-
-uint64_t time_now();
-uint64_t cycles_now(void);
-
 #endif /* CLOCKS_H */

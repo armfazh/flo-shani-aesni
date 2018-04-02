@@ -1,13 +1,5 @@
-project(aesni C)
+cmake_minimum_required(VERSION 3.0)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -std=c99 -maes -march=native -mtune=native")
-set(LIBRARY_OUTPUT_PATH .)
-include_directories(./include)
-add_library(aegis STATIC
-		include/aegis.h
-		src/aegis_opt.c
-		src/aegis_ref.c
-		)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -maes")
 
-add_subdirectory(bench)
-add_subdirectory(tests)
+add_library(flo-aegis STATIC flo-aegis.h aegis_opt.c aegis_ref.c)

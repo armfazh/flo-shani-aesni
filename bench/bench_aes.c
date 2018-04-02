@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <aesni.h>
-#include <prng/flo-random.h>
-#include <cpuid/flo-cpuid.h>
+#include <flo-aesni.h>
+#include <flo-random.h>
+#include <flo-cpuid.h>
 #include "clocks.h"
 
 struct aes_timings {

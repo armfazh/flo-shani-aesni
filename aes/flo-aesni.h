@@ -11,14 +11,19 @@ extern "C"{
 enum NRounds {
   AES_128 = 10,
   AES_192 = 12,
-  AES_256 = 14,
+  AES_256 = 14
 };
 
-#define ALIGN_BYTES 32
+#ifndef ALIGN_BYTES
+#define ALIGN_BYTES 64
+#endif
+
+#ifndef ALIGN
 #ifdef __INTEL_COMPILER
 #define ALIGN __declspec(align(ALIGN_BYTES))
 #else
 #define ALIGN __attribute__ ((aligned (ALIGN_BYTES)))
+#endif
 #endif
 
 typedef uint8_t KeySchedule[(128/8)*11];

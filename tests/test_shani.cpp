@@ -16,9 +16,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 #include <gtest/gtest.h>
-#include <prng/flo-random.h>
 #include <openssl/sha.h>
-#include <shani.h>
+#include <flo-random.h>
+#include <flo-shani.h>
 
 #define TEST_TIMES 1000
 
@@ -204,13 +204,3 @@ TEST(SHA256, MULTI_8x_VEC) {
   } while (k < TEST_TIMES);
   ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
 }
-
-//TEST(SHA256, MULTI_16x_VEC) {
-//  int k = 0;
-//  long ret = 0;
-//  do {
-//    COMPARE_MULTI(SHA256, sha256_16w, k, 16);
-//    k++;
-//  } while (k < TEST_TIMES);
-//  ASSERT_EQ(ret, TEST_TIMES) << "want:\n ";
-//}

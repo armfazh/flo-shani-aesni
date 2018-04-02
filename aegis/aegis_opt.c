@@ -1,6 +1,6 @@
 /*The optimized implementation of AEGIS-128*/
 
-#include <aegis.h>
+#include "flo-aegis.h"
 #include <string.h>
 
 #define LOAD(X)         _mm_load_si128((__m128i*) X)
@@ -116,9 +116,9 @@ static void aegis128_tag_generation_opt(unsigned long long msglen, unsigned long
 
 //encrypt a message
 int crypto_aead_encrypt_opt(
-    unsigned char *c, unsigned long long *clen,
-    unsigned char *m, unsigned long long mlen,
-    unsigned char *ad, unsigned long long adlen,
+    unsigned char *c, uint64_t *clen,
+    unsigned char *m, uint64_t mlen,
+    unsigned char *ad, uint64_t adlen,
     unsigned char *npub,
     unsigned char *k) {
   unsigned long long i;

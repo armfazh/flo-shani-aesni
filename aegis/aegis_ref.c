@@ -1,9 +1,9 @@
-#include <aegis.h>
+#include "flo-aegis.h"
 #include <string.h>
 
 // The initialization state of AEGIS
 /*The input to initialization is the 128-bit key; 128-bit IV;*/
-void aegis128_initialization(const unsigned char *key, const unsigned char *iv, __m128i *state) {
+static void aegis128_initialization(const unsigned char *key, const unsigned char *iv, __m128i *state) {
   int i;
 
   __m128i tmp;
@@ -42,7 +42,7 @@ void aegis128_initialization(const unsigned char *key, const unsigned char *iv, 
 }
 
 //the finalization state of AEGIS
-void aegis128_tag_generation(
+static void aegis128_tag_generation(
     unsigned long long msglen,
     unsigned long long adlen,
     unsigned char maclen,
@@ -85,7 +85,7 @@ void aegis128_tag_generation(
 }
 
 //one step of encryption
-inline void aegis128_enc_aut_step(
+static void aegis128_enc_aut_step(
     const unsigned char *plaintextblk,
     unsigned char *ciphertextblk,
     __m128i *state) {
@@ -117,7 +117,7 @@ inline void aegis128_enc_aut_step(
     _mm_store_si128((__m128i*)ciphertextblk+NN,ci);
 
 //four steps of encryption
-inline void aegis128_enc_aut_step4(
+static void aegis128_enc_aut_step4(
     const unsigned char *plaintextblk,
     unsigned char *ciphertextblk,
     __m128i *state) {
@@ -164,7 +164,7 @@ inline void aegis128_enc_aut_step4(
 }
 
 //one step of decryption
-inline void aegis128_dec_aut_step(
+static void aegis128_dec_aut_step(
     unsigned char *plaintextblk,
     const unsigned char *ciphertextblk,
     __m128i *state) {
@@ -191,9 +191,9 @@ inline void aegis128_dec_aut_step(
 
 //encrypt a message
 int crypto_aead_encrypt(
-    unsigned char *c, unsigned long long *clen,
-    const unsigned char *m, unsigned long long mlen,
-    const unsigned char *ad, unsigned long long adlen,
+    unsigned char *c, uint64_t *clen,
+    const unsigned char *m, uint64_t mlen,
+    const unsigned char *ad, uint64_t adlen,
     const unsigned char *npub,
     const unsigned char *k) {
   unsigned long long i;
@@ -238,10 +238,10 @@ int crypto_aead_encrypt(
 }
 
 int crypto_aead_decrypt(
-    unsigned char *m, unsigned long long *mlen,
+    unsigned char *m, uint64_t *mlen,
     unsigned char *nsec,
-    const unsigned char *c, unsigned long long clen,
-    const unsigned char *ad, unsigned long long adlen,
+    const unsigned char *c, uint64_t clen,
+    const unsigned char *ad, uint64_t adlen,
     const unsigned char *npub,
     const unsigned char *k) {
   unsigned long long i;

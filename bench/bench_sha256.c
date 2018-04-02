@@ -16,12 +16,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
-#include <shani.h>
 #include <openssl/sha.h>
-#include <prng/flo-random.h>
-#include <cpuid/flo-cpuid.h>
+#include <flo-shani.h>
+#include <flo-random.h>
+#include <flo-cpuid.h>
 #include "clocks.h"
 
+/**
+ * Maximum size of the message to be hashed: 2^MAX_SIZE_BITS.
+ * E.g. for hashing messages of 4096 bytes, set MAX_SIZE_BITS to 13.
+ */
 #define MAX_SIZE_BITS 13
 
 struct seqTimings {
@@ -86,6 +90,7 @@ void print_tablePipelined(struct parallelTimings *table, int items) {
 
 void print_tableVectorized(struct parallelTimings *table, int items) {
   int i;
+  printf("Experiment: comparing OpenSSL vs SHANI\n");
   printf("            Cycles per byte \n");
   printf("╔═════════╦═════════╦═════════╦═════════╗\n");
   printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
@@ -169,7 +174,7 @@ void bench_Pipelined() {
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
 
-  printf("Pipelined Implementations of SHA-256:\n");
+  printf("\nExperiment: pipelined implementations of SHA-256.\n");
   if (hasSHANI()) {
     printf("Running 1x:\n");
     BENCH_SIZE_1W(sha256_update_shani, _1x);
@@ -181,13 +186,12 @@ void bench_Pipelined() {
     BENCH_SIZE_NW(sha256_x8_update_shani_8x, 8);
     print_tablePipelined(table, MAX_SIZE_BITS);
   } else {
-    printf("This processor does not supports SHANI set.\n");
+    printf("Failed! This processor does not supports SHANI set.\n");
   }
 }
 
 void print_tableSeq(struct seqTimings *table, int items) {
   int i;
-  printf("    SHA256: OpenSSL vs SHANI \n");
   printf("    Cycles per byte \n");
   printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
   printf("║  Size   ║ OpenSSL ║ OpenSSL ║This work║ Speedup ║\n");
@@ -205,7 +209,6 @@ void print_tableSeq(struct seqTimings *table, int items) {
 
 void print_tableOneSeq(struct seqTimings *table, int items) {
   int i;
-  printf("   SHA256: OpenSSL \n");
   printf("   Cycles per byte \n");
   printf("╔═════════╦═════════╗\n");
   printf("║  Size   ║ OpenSSL ║\n");
@@ -224,6 +227,7 @@ void bench_OpenSSL_vs_SHANI() {
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
   unsigned char digest[32];
 
+  printf("\nExperiment: comparing OpenSSL vs SHANI\n");
   if (hasSHANI()) {
     printf("Running OpenSSL (shani):\n");
     BENCH_SIZE_1W(SHA256, openssl_shani);
@@ -238,8 +242,8 @@ void bench_OpenSSL_vs_SHANI() {
   } else {
     printf("Running OpenSSL (64-bit):\n");
     BENCH_SIZE_1W(SHA256, openssl_native);
-    printf("This processor does not supports SHANI set.\n");
-    printf("Showing timings of OpenSSL only.\n");
+    printf("Failed! This processor does not supports SHANI set.\n");
+    printf("        Showing timings of OpenSSL only.\n");
     print_tableOneSeq(table, MAX_SIZE_BITS);
   }
   _mm_free(message);
@@ -251,7 +255,7 @@ void bench_Vectorized(){
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
   unsigned char digest[32];
 
-  printf("Vectorized Implementations of SHA-256:\n");
+  printf("\nExperiment: vectorized implementations of SHA-256.\n");
   disableSHANI();
   printf("Running OpenSSL (64-bit):\n");
   BENCH_SIZE_1W(SHA256, _1x);
@@ -261,42 +265,6 @@ void bench_Vectorized(){
   BENCH_SIZE_NW(sha256_8w, 8);
   print_tableVectorized(table, MAX_SIZE_BITS);
 }
-
-//#include <string.h>
-//#define N 4
-//void tests(){
-//  const int SIZE=189;
-//  int it,c=0;
-//  uint8_t *message[N];
-//  uint8_t *digest0[N];
-//  uint8_t *digest1[N];
-//  for(it=0;it<N;it++) {
-//    message[it] = (uint8_t*)_mm_malloc(SIZE+1,ALIGN_BYTES);
-//    digest0[it] = (uint8_t*)_mm_malloc(32,ALIGN_BYTES);
-//    digest1[it] = (uint8_t*)_mm_malloc(32,ALIGN_BYTES);
-//    random_bytes(message[it],SIZE);
-////    strncpy((char*)message[it],"abc",SIZE);
-////    strncpy((char*)message[it],"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",SIZE);
-//    strncpy((char*)message[it],"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopqabcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopqabcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopqabcdbcdecdefdefgijkij",SIZE);
-//  }
-//
-//  sha256_4w(message,SIZE,digest0);
-//  for(it=0;it<N;it++){
-//    SHA256((const unsigned char*)message[it],SIZE,digest1[it]);
-//    c += (memcmp(digest0[it],digest1[it],32)==0);
-////    printf("%d@ ",it);print_hex_bytes(digest1[it],32);
-////    printf("%d> ",it);print_hex_bytes(digest0[it],32);
-//  }
-//  printf("%d@ ",0);print_hex_bytes(digest1[0],32);
-//  printf("%d> ",0);print_hex_bytes(digest0[0],32);
-//  printf("Passed: [%s] %d \n", c==N? "Yes":"No",c);
-//
-//  for(it=0;it<N;it++) {
-//      _mm_free(message[it]);
-//      _mm_free(digest0[it]);
-//      _mm_free(digest1[it]);
-//    }
-//}
 
 int main(void) {
   machine_info();

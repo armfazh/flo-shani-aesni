@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.0)
 
-add_library(cpuid flo-cpuid.h flo-cpuid.c)
+add_library(flo-cpuid flo-cpuid.h flo-cpuid.c)
 

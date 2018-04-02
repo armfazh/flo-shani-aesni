@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include <aegis.h>
-#include <prng/flo-random.h>
-#include <cpuid/flo-cpuid.h>
+#include <flo-aegis.h>
+#include <flo-random.h>
+#include <flo-cpuid.h>
 #include "clocks.h"
 
 struct aegis_timings {
@@ -10,7 +10,7 @@ struct aegis_timings {
   uint64_t _opt;
 };
 
-#define MAX_SIZE_BITS 21
+#define MAX_SIZE_BITS 16
 #define TAG_SIZE_BYTES 16
 
 #define BENCH_SIZE_1W(FUNC, IMPL)                   \
@@ -24,7 +24,7 @@ do{                                                 \
     uint8_t* ad = (uint8_t*)_mm_malloc(adlen,ALIGN_BYTES); \
     ALIGN uint8_t npub[16];                         \
     ALIGN uint8_t k[16];                            \
-    unsigned long long clen;                        \
+    uint64_t clen;                        \
     random_bytes(message, MAX_SIZE);                \
     random_bytes(ad, adlen);                        \
     random_bytes(npub, 16);                         \
