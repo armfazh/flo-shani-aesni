@@ -27,7 +27,9 @@
 extern "C"{
 #endif
 
+#ifndef ALIGN_BYTES
 #define ALIGN_BYTES 32
+#endif
 #ifdef __INTEL_COMPILER
 #define ALIGN __declspec(align(ALIGN_BYTES))
 #else

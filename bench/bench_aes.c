@@ -52,7 +52,7 @@ do {                                                  \
   for (it = 0; it < MAX_SIZE_BITS; it++) {            \
     int message_size = 1 << it;                       \
     BENCH_TIMES = 512 - it * 20;                      \
-    CLOCKS(FUNC(cipher, message, ivec, message_size, round_keys, AES_128)); \
+    CLOCKS(FUNC(cipher, message, ivec, message_size, round_keys, AES_128_Rounds)); \
     table[it].size = message_size;                    \
     table[it]._ ## K ## x = CYCLES;                   \
   }                                                   \
@@ -76,7 +76,7 @@ do {                                                  \
   for (it = 0; it < MAX_SIZE_BITS; it++) {            \
     int message_size = 1 << it;                       \
     BENCH_TIMES = 512 - it * 20;                      \
-    CLOCKS(FUNC(cipher, message, ivec, nonce, message_size, round_keys, AES_128)); \
+    CLOCKS(FUNC(cipher, message, ivec, message_size, round_keys, AES_128_Rounds)); \
     table[it].size = message_size;                    \
     table[it]._ ## K ## x = CYCLES;                   \
   }                                                   \
@@ -101,7 +101,7 @@ do{                                            \
         random_bytes(ivec[i_multi],16);  \
         random_bytes(message[i_multi],MSG_LEN);  \
     }                                            \
-    CLOCKS(FUNC((const unsigned char**)cipher,message,ivec,MSG_LEN,round_keys,AES_128)); \
+    CLOCKS(FUNC((const unsigned char**)cipher,message,ivec,MSG_LEN,round_keys,AES_128_Rounds)); \
     table[it].size = message_size;             \
     table[it]._ ## N ## x = CYCLES;            \
     for(i_multi=0;i_multi<N;i_multi++) {       \
