@@ -21,13 +21,14 @@
 
 cmake_minimum_required(VERSION 3.0)
 enable_language(CXX)
+set(CMAKE_CXX_STANDARD 98)
 
 include_directories(../aes)
 include_directories(../sha256)
 include_directories(../prng)
 include_directories(../cpuid)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O3 -pedantic -mavx2 -msha")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O3 -pedantic")
 
 # Locate GTest
 find_package(GTest REQUIRED)

@@ -583,13 +583,12 @@ void AES_CBC_encrypt_8w(
 
 }
 
-
 /** AES-128-CTR Pipelined Implementations **/
 static ALIGN const uint32_t ONE[4] = {1, 0, 0, 0};
 static ALIGN const uint32_t TWO[4] = {2, 0, 0, 0};
 static ALIGN const uint32_t FOUR[4] = {4, 0, 0, 0};
 static ALIGN const uint32_t EIGHT[4] = {8, 0, 0, 0};
-static ALIGN const uint64_t BSWAP64[2] = {0x08090a0b0c0d0e0f,0x0001020304050607};
+static ALIGN const uint64_t BSWAP64[2] = {0x08090a0b0c0d0e0f, 0x0001020304050607};
 
 #define AES1_CIPHER(BLOCK, KEY)                             \
   (BLOCK) = XOR((BLOCK), ((__m128i *) (KEY))[0]);           \
@@ -624,7 +623,7 @@ static ALIGN const uint64_t BSWAP64[2] = {0x08090a0b0c0d0e0f,0x0001020304050607}
   (BLOCK2) = AESENCLAST((BLOCK2), ((__m128i *) (KEY))[j]);  \
   (BLOCK3) = AESENCLAST((BLOCK3), ((__m128i *) (KEY))[j]);
 
-#define AES8_CIPHER(BLOCK0, BLOCK1, BLOCK2, BLOCK3,         \
+#define AES8_CIPHER(BLOCK0, BLOCK1, BLOCK2, BLOCK3, \
                     BLOCK4, BLOCK5, BLOCK6, BLOCK7, KEY)    \
   (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
   (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
@@ -659,26 +658,30 @@ void AES_CTR_encrypt(
     const unsigned char *ivec,
     unsigned long length,
     const unsigned char *key,
-    const int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i*)ONE);
-  const __m128i bswap = _mm_load_si128((__m128i*)BSWAP64);
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
   __m128i counter_be, counter_le;
-  int j;
-  unsigned long i;
-  if (length % 16)
-    length = length / 16 + 1;
-  else
-    length /= 16;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
 
   counter_be = _mm_loadu_si128((__m128i *) ivec);
   counter_le = _mm_shuffle_epi8(counter_be, bswap);
 
-  for (i = 0; i < length; i++) {
+  for (i = 0; i < num_blocks; i++) {
     counter_be = _mm_shuffle_epi8(counter_le, bswap);
     counter_le = ADD(counter_le, one);
     AES1_CIPHER(counter_be, key);
     counter_be = XOR(counter_be, _mm_loadu_si128((__m128i *) in + i));
     _mm_storeu_si128((__m128i *) out + i, counter_be);
+  }
+  if (remainder_bytes > 0) {
+    counter_be = _mm_shuffle_epi8(counter_le, bswap);
+    AES1_CIPHER(counter_be, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be)[j] ^ in[16 * i + j];
+    }
   }
 }
 
@@ -688,40 +691,44 @@ void AES_CTR_encrypt_pipe2(
     const unsigned char *ivec,
     unsigned long length,
     const unsigned char *key,
-    const int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i*)ONE);
-  const __m128i two = _mm_load_si128((__m128i*)TWO);
-  const __m128i bswap = _mm_load_si128((__m128i*)BSWAP64);
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i two = _mm_load_si128((__m128i *) TWO);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
   __m128i counter_be0, counter_le0;
   __m128i counter_be1, counter_le1;
-  int j;
-  unsigned long i;
-  if (length % 16)
-    length = length / 16 + 1;
-  else
-    length /= 16;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
 
   counter_be0 = _mm_loadu_si128((__m128i *) ivec);
   counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
   counter_le1 = ADD(counter_le0, one);
 
-  for (i = 0; i < length/2; i++) {
+  for (i = 0; i < num_blocks / 2; i++) {
     counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
     counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
     counter_le0 = ADD(counter_le0, two);
     counter_le1 = ADD(counter_le1, two);
     AES2_CIPHER(counter_be0, counter_be1, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *)in + 2*i + 0));
-    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *)in + 2*i + 1));
-    _mm_storeu_si128((__m128i *)out + 2*i + 0, counter_be0);
-    _mm_storeu_si128((__m128i *)out + 2*i + 1, counter_be1);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 2 * i + 0));
+    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 2 * i + 1));
+    _mm_storeu_si128((__m128i *) out + 2 * i + 0, counter_be0);
+    _mm_storeu_si128((__m128i *) out + 2 * i + 1, counter_be1);
   }
-  for (i = 2 * i; i < length; i++) {
+  for (i = 2 * i; i < num_blocks; i++) {
     counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
     counter_le0 = ADD(counter_le0, one);
     AES1_CIPHER(counter_be0, key);
     counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
     _mm_storeu_si128((__m128i *) out + i, counter_be0);
+  }
+  if (remainder_bytes > 0) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    AES1_CIPHER(counter_be0, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
+    }
   }
 }
 
@@ -731,20 +738,17 @@ void AES_CTR_encrypt_pipe4(
     const unsigned char *ivec,
     unsigned long length,
     const unsigned char *key,
-    const int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i*)ONE);
-  const __m128i four = _mm_load_si128((__m128i*)FOUR);
-  const __m128i bswap = _mm_load_si128((__m128i*)BSWAP64);
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i four = _mm_load_si128((__m128i *) FOUR);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
   __m128i counter_be0, counter_le0;
   __m128i counter_be1, counter_le1;
   __m128i counter_be2, counter_le2;
   __m128i counter_be3, counter_le3;
-  int j;
-  unsigned long i;
-  if (length % 16)
-    length = length / 16 + 1;
-  else
-    length /= 16;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
 
   counter_be0 = _mm_loadu_si128((__m128i *) ivec);
   counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
@@ -752,7 +756,7 @@ void AES_CTR_encrypt_pipe4(
   counter_le2 = ADD(counter_le1, one);
   counter_le3 = ADD(counter_le2, one);
 
-  for (i = 0; i < length/4; i++) {
+  for (i = 0; i < num_blocks / 4; i++) {
     counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
     counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
     counter_be2 = _mm_shuffle_epi8(counter_le2, bswap);
@@ -762,21 +766,28 @@ void AES_CTR_encrypt_pipe4(
     counter_le2 = ADD(counter_le2, four);
     counter_le3 = ADD(counter_le3, four);
     AES4_CIPHER(counter_be0, counter_be1, counter_be2, counter_be3, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *)in + 4*i + 0));
-    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *)in + 4*i + 1));
-    counter_be2 = XOR(counter_be2, _mm_loadu_si128((__m128i *)in + 4*i + 2));
-    counter_be3 = XOR(counter_be3, _mm_loadu_si128((__m128i *)in + 4*i + 3));
-    _mm_storeu_si128((__m128i *)out + 4*i + 0, counter_be0);
-    _mm_storeu_si128((__m128i *)out + 4*i + 1, counter_be1);
-    _mm_storeu_si128((__m128i *)out + 4*i + 2, counter_be2);
-    _mm_storeu_si128((__m128i *)out + 4*i + 3, counter_be3);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 4 * i + 0));
+    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 4 * i + 1));
+    counter_be2 = XOR(counter_be2, _mm_loadu_si128((__m128i *) in + 4 * i + 2));
+    counter_be3 = XOR(counter_be3, _mm_loadu_si128((__m128i *) in + 4 * i + 3));
+    _mm_storeu_si128((__m128i *) out + 4 * i + 0, counter_be0);
+    _mm_storeu_si128((__m128i *) out + 4 * i + 1, counter_be1);
+    _mm_storeu_si128((__m128i *) out + 4 * i + 2, counter_be2);
+    _mm_storeu_si128((__m128i *) out + 4 * i + 3, counter_be3);
   }
-  for (i = 4 * i; i < length; i++) {
+  for (i = 4 * i; i < num_blocks; i++) {
     counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
     counter_le0 = ADD(counter_le0, one);
     AES1_CIPHER(counter_be0, key);
     counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
     _mm_storeu_si128((__m128i *) out + i, counter_be0);
+  }
+  if (remainder_bytes > 0) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    AES1_CIPHER(counter_be0, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
+    }
   }
 }
 
@@ -786,7 +797,7 @@ void AES_CTR_encrypt_pipe8(
     const unsigned char *ivec,
     unsigned long length,
     const unsigned char *key,
-    const int number_of_rounds) {
+    const unsigned int number_of_rounds) {
   const __m128i one = _mm_load_si128((__m128i *) ONE);
   const __m128i eight = _mm_load_si128((__m128i *) EIGHT);
   const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
@@ -798,12 +809,9 @@ void AES_CTR_encrypt_pipe8(
   __m128i counter_be5, counter_le5;
   __m128i counter_be6, counter_le6;
   __m128i counter_be7, counter_le7;
-  int j;
-  unsigned long i;
-  if (length % 16)
-    length = length / 16 + 1;
-  else
-    length /= 16;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
 
   counter_be0 = _mm_loadu_si128((__m128i *) ivec);
   counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
@@ -815,7 +823,7 @@ void AES_CTR_encrypt_pipe8(
   counter_le6 = ADD(counter_le5, one);
   counter_le7 = ADD(counter_le6, one);
 
-  for (i = 0; i < length / 8; i++) {
+  for (i = 0; i < num_blocks / 8; i++) {
     counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
     counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
     counter_be2 = _mm_shuffle_epi8(counter_le2, bswap);
@@ -851,12 +859,19 @@ void AES_CTR_encrypt_pipe8(
     _mm_storeu_si128((__m128i *) out + 8 * i + 6, counter_be6);
     _mm_storeu_si128((__m128i *) out + 8 * i + 7, counter_be7);
   }
-  for (i = 8 * i; i < length; i++) {
+  for (i = 8 * i; i < num_blocks; i++) {
     counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
     counter_le0 = ADD(counter_le0, one);
     AES1_CIPHER(counter_be0, key);
     counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
     _mm_storeu_si128((__m128i *) out + i, counter_be0);
+  }
+  if (remainder_bytes > 0) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    AES1_CIPHER(counter_be0, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
+    }
   }
 }
 

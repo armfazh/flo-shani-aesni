@@ -32,8 +32,9 @@
  * @param buffer
  * @param num_bytes
  */
-void random_bytes(uint8_t *buffer, int num_bytes) {
-  int c, l, fd = open("/dev/urandom", O_RDONLY);
+void random_bytes(uint8_t *buffer, size_t num_bytes) {
+  size_t l;
+  int c, fd = open("/dev/urandom", O_RDONLY);
 
   if (fd == -1) {
     printf("Error opening /dev/urandom\n");
@@ -51,12 +52,11 @@ void random_bytes(uint8_t *buffer, int num_bytes) {
   close(fd);
 }
 
-void print_hex_bytes(uint8_t *A, int num_bytes) {
-  int i;
-
+void print_hex_bytes(uint8_t *A, size_t num_bytes) {
+  size_t i;
   printf("0x");
-  for (i = num_bytes - 1; i >= 0; i--) {
-    printf("%02x", A[i]);
+  for (i = 0; i < num_bytes; i++) {
+    printf("%02x", A[num_bytes - 1 - i]);
   }
   printf("\n");
 }

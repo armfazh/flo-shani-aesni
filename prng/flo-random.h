@@ -29,8 +29,8 @@
 extern "C" {
 #endif
 
-void random_bytes(uint8_t *A, int length);
-void print_hex_bytes(uint8_t *A, int num_bytes);
+void random_bytes(uint8_t *A, size_t length);
+void print_hex_bytes(uint8_t *A, size_t num_bytes);
 
 #ifdef __cplusplus
 }

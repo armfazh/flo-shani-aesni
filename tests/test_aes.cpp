@@ -27,8 +27,8 @@
 
 #define TEST_TIMES 1000
 
-static std::string print_ostream(uint8_t *data, int len) {
-  int i = 0;
+static std::string print_ostream(uint8_t *data, size_t len) {
+  size_t i = 0;
   std::stringstream stream;
   for (i = 0; i < len; i++) {
     stream << std::setbase(16) << std::setfill('0') << std::setw(2)
@@ -37,14 +37,6 @@ static std::string print_ostream(uint8_t *data, int len) {
   stream << std::endl;
   return stream.str();
 }
-
-typedef void (*AES_CTR_Implementation)(
-    const unsigned char *in,
-    unsigned char *out,
-    const unsigned char *ivec,
-    unsigned long length,
-    const unsigned char *key,
-    const int number_of_rounds);
 
 class AES_PIPE : public ::testing::TestWithParam<AES_CTR_Implementation> {
   //  virtual void SetUp() { printf("starting \n"); }
@@ -60,8 +52,8 @@ TEST_P(AES_PIPE, ONE_BLOCK) {
   uint8_t *plaintext = NULL;
   uint8_t *ciphertext0 = NULL;
   uint8_t *ciphertext1 = NULL;
-  int plaintext_len;
-  int ciphertext_len;
+  size_t plaintext_len;
+  size_t ciphertext_len;
   int len;
   int count = 0;
 
@@ -69,8 +61,8 @@ TEST_P(AES_PIPE, ONE_BLOCK) {
   ctx = EVP_CIPHER_CTX_new();
   plaintext_len = 16;
   plaintext = (uint8_t *) _mm_malloc(plaintext_len, ALIGN_BYTES);
-  ciphertext0 = (uint8_t *) _mm_malloc(plaintext_len + (AES_BlockSize_Bits / 8), ALIGN_BYTES);
-  ciphertext1 = (uint8_t *) _mm_malloc(plaintext_len + (AES_BlockSize_Bits / 8), ALIGN_BYTES);
+  ciphertext0 = (uint8_t *) _mm_malloc(plaintext_len, ALIGN_BYTES);
+  ciphertext1 = (uint8_t *) _mm_malloc(plaintext_len, ALIGN_BYTES);
 
   do {
     random_bytes(plaintext, plaintext_len);
@@ -79,10 +71,13 @@ TEST_P(AES_PIPE, ONE_BLOCK) {
 
     /* Encrypting with OpenSSL */
     EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, key, iv);
-    EVP_EncryptUpdate(ctx, ciphertext0, &len, plaintext, plaintext_len);
-    ciphertext_len = len;
+    EVP_EncryptUpdate(ctx, ciphertext0, &len, plaintext, (int) plaintext_len);
+    ciphertext_len = (size_t) len;
     EVP_EncryptFinal_ex(ctx, ciphertext0 + len, &len);
-    ciphertext_len += len;
+    ciphertext_len += (size_t) len;
+    ASSERT_EQ(ciphertext_len, plaintext_len)
+                  << "get:  " << ciphertext_len
+                  << "want: " << plaintext_len;
 
     /* Encrypting with flo-aesni */
     AES_128_Key_Expansion(key, key_sched);
@@ -103,11 +98,10 @@ TEST_P(AES_PIPE, ONE_BLOCK) {
   EVP_CIPHER_CTX_free(ctx);
   EXPECT_EQ(count, TEST_TIMES) << "passed: " << count << "/" << TEST_TIMES
                                << std::endl;
-
 }
 
 TEST_P(AES_PIPE, MANY_BLOCKS) {
-  const AES_CTR_Implementation aes_ctr = GetParam();
+  AES_CTR_Implementation aes_ctr = GetParam();
   uint8_t key[AES_128_Bytes];
   uint8_t key_sched[AES_128_Bytes * (AES_128_Rounds + 1)];
   uint8_t iv[AES_BlockSize_Bits / 8];
@@ -115,8 +109,8 @@ TEST_P(AES_PIPE, MANY_BLOCKS) {
   uint8_t *plaintext = NULL;
   uint8_t *ciphertext0 = NULL;
   uint8_t *ciphertext1 = NULL;
-  int plaintext_len;
-  int ciphertext_len;
+  size_t plaintext_len;
+  size_t ciphertext_len;
   int count = 0;
   int len;
 
@@ -125,20 +119,23 @@ TEST_P(AES_PIPE, MANY_BLOCKS) {
 
   do {
     random_bytes(reinterpret_cast<uint8_t *>(&plaintext_len), sizeof(plaintext_len));
-    plaintext_len &= (1 << 20) - 1;
+    plaintext_len &= 0xfffff;
     plaintext = (uint8_t *) _mm_malloc(plaintext_len, ALIGN_BYTES);
-    ciphertext0 = (uint8_t *) _mm_malloc(plaintext_len + (AES_BlockSize_Bits / 8), ALIGN_BYTES);
-    ciphertext1 = (uint8_t *) _mm_malloc(plaintext_len + (AES_BlockSize_Bits / 8), ALIGN_BYTES);
+    ciphertext0 = (uint8_t *) _mm_malloc(plaintext_len, ALIGN_BYTES);
+    ciphertext1 = (uint8_t *) _mm_malloc(plaintext_len, ALIGN_BYTES);
     random_bytes(plaintext, plaintext_len);
     random_bytes(key, sizeof(key));
     random_bytes(iv, sizeof(iv));
 
     /* Encrypting with OpenSSL */
     EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, key, iv);
-    EVP_EncryptUpdate(ctx, ciphertext0, &len, plaintext, plaintext_len);
-    ciphertext_len = len;
+    EVP_EncryptUpdate(ctx, ciphertext0, &len, plaintext, (int) plaintext_len);
+    ciphertext_len = (size_t) len;
     EVP_EncryptFinal_ex(ctx, ciphertext0 + len, &len);
-    ciphertext_len += len;
+    ciphertext_len += (size_t) len;
+    ASSERT_EQ(ciphertext_len, plaintext_len)
+                  << "get:  " << ciphertext_len
+                  << "want: " << plaintext_len;
 
     /* Encrypting with flo-aesni */
     AES_128_Key_Expansion(key, key_sched);

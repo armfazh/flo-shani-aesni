@@ -70,6 +70,9 @@ typedef uint8_t Key[(128 / 8)];
 
 void AES_128_Key_Expansion(const unsigned char *userkey,
                            unsigned char *key);
+
+/** AES-CBC Implementations **/
+
 void AES_CBC_encrypt(const unsigned char *in,
                      unsigned char *out,
                      unsigned char ivec[16],
@@ -84,33 +87,6 @@ void AES_CBC_decrypt(const unsigned char *in,
                      unsigned char *key,
                      const int number_of_rounds);
 
-void AES_CTR_encrypt(const unsigned char *in,
-                     unsigned char *out,
-                     const unsigned char *ivec,
-                     unsigned long length,
-                     const unsigned char *key,
-                     const int number_of_rounds);
-
-void AES_CTR_encrypt_pipe2(const unsigned char *in,
-                           unsigned char *out,
-                           const unsigned char *ivec,
-                           unsigned long length,
-                           const unsigned char *key,
-                           const int number_of_rounds);
-
-void AES_CTR_encrypt_pipe4(const unsigned char *in,
-                           unsigned char *out,
-                           const unsigned char *ivec,
-                           unsigned long length,
-                           const unsigned char *key,
-                           const int number_of_rounds);
-
-void AES_CTR_encrypt_pipe8(const unsigned char *in,
-                           unsigned char *out,
-                           const unsigned char *ivec,
-                           unsigned long length,
-                           const unsigned char *key,
-                           const int number_of_rounds);
 
 void AES_CBC_decrypt_pipe2(const unsigned char *in,
                            unsigned char *out,
@@ -181,6 +157,44 @@ void AES_CBC_decrypt_8w(const unsigned char *in[8],
                         unsigned long length,
                         unsigned char *key,
                         const int number_of_rounds);
+
+/** AES-CTR Pipelined Implementations **/
+
+typedef void (*AES_CTR_Implementation)(
+    const unsigned char *in,
+    unsigned char *out,
+    const unsigned char *ivec,
+    unsigned long length,
+    const unsigned char *key,
+    const unsigned int number_of_rounds);
+
+void AES_CTR_encrypt(const unsigned char *in,
+                     unsigned char *out,
+                     const unsigned char *ivec,
+                     unsigned long length,
+                     const unsigned char *key,
+                     const unsigned int number_of_rounds);
+
+void AES_CTR_encrypt_pipe2(const unsigned char *in,
+                           unsigned char *out,
+                           const unsigned char *ivec,
+                           unsigned long length,
+                           const unsigned char *key,
+                           const unsigned int number_of_rounds);
+
+void AES_CTR_encrypt_pipe4(const unsigned char *in,
+                           unsigned char *out,
+                           const unsigned char *ivec,
+                           unsigned long length,
+                           const unsigned char *key,
+                           const unsigned int number_of_rounds);
+
+void AES_CTR_encrypt_pipe8(const unsigned char *in,
+                           unsigned char *out,
+                           const unsigned char *ivec,
+                           unsigned long length,
+                           const unsigned char *key,
+                           const unsigned int number_of_rounds);
 
 #ifdef __cplusplus
 }
