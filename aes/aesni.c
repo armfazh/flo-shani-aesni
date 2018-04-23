@@ -22,6 +22,12 @@
  */
 #include "flo-aesni.h"
 
+enum aes_numRounds {
+  AES_128_numRounds = 10,
+  AES_192_numRounds = 12,
+  AES_256_numRounds = 14
+};
+
 #define ADD        _mm_add_epi32
 #define XOR        _mm_xor_si128
 #define AESENC     _mm_aesenc_si128
@@ -42,7 +48,7 @@ static inline __m128i AES_128_ASSIST(__m128i temp1, __m128i temp2) {
   return temp1;
 }
 
-void AES_128_Key_Expansion(const unsigned char *userkey, unsigned char *key) {
+static void AES_128_Key_Expansion(const unsigned char *userkey, unsigned char *key) {
   __m128i temp1, temp2;
   __m128i *Key_Schedule = (__m128i *) key;
   temp1 = _mm_loadu_si128((__m128i *) userkey);
@@ -78,6 +84,457 @@ void AES_128_Key_Expansion(const unsigned char *userkey, unsigned char *key) {
   temp1 = AES_128_ASSIST(temp1, temp2);
   Key_Schedule[10] = temp1;
 }
+
+static inline void KEY_192_ASSIST(__m128i *temp1, __m128i *temp2, __m128i *temp3) {
+  __m128i temp4;
+  *temp2 = _mm_shuffle_epi32(*temp2, 0x55);
+  temp4 = _mm_slli_si128(*temp1, 0x4);
+  *temp1 = _mm_xor_si128(*temp1, temp4);
+  temp4 = _mm_slli_si128(temp4, 0x4);
+  *temp1 = _mm_xor_si128(*temp1, temp4);
+  temp4 = _mm_slli_si128(temp4, 0x4);
+  *temp1 = _mm_xor_si128(*temp1, temp4);
+  *temp1 = _mm_xor_si128(*temp1, *temp2);
+  *temp2 = _mm_shuffle_epi32(*temp1, 0xff);
+  temp4 = _mm_slli_si128(*temp3, 0x4);
+  *temp3 = _mm_xor_si128(*temp3, temp4);
+  *temp3 = _mm_xor_si128(*temp3, *temp2);
+}
+
+static void AES_192_Key_Expansion(const unsigned char *userkey,
+                           unsigned char *key) {
+  __m128i temp1, temp2, temp3;
+  __m128i *Key_Schedule = (__m128i *) key;
+  temp1 = _mm_loadu_si128((__m128i *) userkey);
+  temp3 = _mm_loadu_si128((__m128i *) (userkey + 16));
+  Key_Schedule[0] = temp1;
+  Key_Schedule[1] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x1);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[1] = (__m128i) _mm_shuffle_pd((__m128d) Key_Schedule[1],
+                                             (__m128d) temp1, 0);
+  Key_Schedule[2] = (__m128i) _mm_shuffle_pd((__m128d) temp1, (__m128d) temp3, 1);
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x2);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[3] = temp1;
+  Key_Schedule[4] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x4);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[4] = (__m128i) _mm_shuffle_pd((__m128d) Key_Schedule[4],
+                                             (__m128d) temp1, 0);
+  Key_Schedule[5] = (__m128i) _mm_shuffle_pd((__m128d) temp1, (__m128d) temp3, 1);
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x8);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[6] = temp1;
+  Key_Schedule[7] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x10);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[7] = (__m128i) _mm_shuffle_pd((__m128d) Key_Schedule[7],
+                                             (__m128d) temp1, 0);
+  Key_Schedule[8] = (__m128i) _mm_shuffle_pd((__m128d) temp1, (__m128d) temp3, 1);
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x20);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[9] = temp1;
+  Key_Schedule[10] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x40);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[10] = (__m128i) _mm_shuffle_pd((__m128d) Key_Schedule[10],
+                                              (__m128d) temp1, 0);
+  Key_Schedule[11] = (__m128i) _mm_shuffle_pd((__m128d) temp1, (__m128d) temp3, 1);
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x80);
+  KEY_192_ASSIST(&temp1, &temp2, &temp3);
+  Key_Schedule[12] = temp1;
+  Key_Schedule[13] = temp3;
+}
+
+static inline void KEY_256_ASSIST_1(__m128i *temp1, __m128i *temp2) {
+  __m128i temp4;
+  *temp2 = _mm_shuffle_epi32(*temp2, 0xff);
+  temp4 = _mm_slli_si128(*temp1, 0x4);
+  *temp1 = _mm_xor_si128(*temp1, temp4);
+  temp4 = _mm_slli_si128(temp4, 0x4);
+  *temp1 = _mm_xor_si128(*temp1, temp4);
+  temp4 = _mm_slli_si128(temp4, 0x4);
+  *temp1 = _mm_xor_si128(*temp1, temp4);
+  *temp1 = _mm_xor_si128(*temp1, *temp2);
+}
+
+static inline void KEY_256_ASSIST_2(__m128i *temp1, __m128i *temp3) {
+  __m128i temp2, temp4;
+  temp4 = _mm_aeskeygenassist_si128(*temp1, 0x0);
+  temp2 = _mm_shuffle_epi32(temp4, 0xaa);
+  temp4 = _mm_slli_si128(*temp3, 0x4);
+  *temp3 = _mm_xor_si128(*temp3, temp4);
+  temp4 = _mm_slli_si128(temp4, 0x4);
+  *temp3 = _mm_xor_si128(*temp3, temp4);
+  temp4 = _mm_slli_si128(temp4, 0x4);
+  *temp3 = _mm_xor_si128(*temp3, temp4);
+  *temp3 = _mm_xor_si128(*temp3, temp2);
+}
+
+static void AES_256_Key_Expansion(const unsigned char *userkey,
+                           unsigned char *key) {
+  __m128i temp1, temp2, temp3;
+  __m128i *Key_Schedule = (__m128i *) key;
+  temp1 = _mm_loadu_si128((__m128i *) userkey);
+  temp3 = _mm_loadu_si128((__m128i *) (userkey + 16));
+  Key_Schedule[0] = temp1;
+  Key_Schedule[1] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x01);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[2] = temp1;
+  KEY_256_ASSIST_2(&temp1, &temp3);
+  Key_Schedule[3] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x02);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[4] = temp1;
+  KEY_256_ASSIST_2(&temp1, &temp3);
+  Key_Schedule[5] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x04);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[6] = temp1;
+  KEY_256_ASSIST_2(&temp1, &temp3);
+  Key_Schedule[7] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x08);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[8] = temp1;
+  KEY_256_ASSIST_2(&temp1, &temp3);
+  Key_Schedule[9] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x10);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[10] = temp1;
+  KEY_256_ASSIST_2(&temp1, &temp3);
+  Key_Schedule[11] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x20);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[12] = temp1;
+  KEY_256_ASSIST_2(&temp1, &temp3);
+  Key_Schedule[13] = temp3;
+  temp2 = _mm_aeskeygenassist_si128(temp3, 0x40);
+  KEY_256_ASSIST_1(&temp1, &temp2);
+  Key_Schedule[14] = temp1;
+}
+
+uint8_t * AES_Key_Expansion(const unsigned char *key, AES_CIPHER_ID id)
+{
+  unsigned char * key_sched = NULL;
+  switch(id){
+    case AES_128:
+      key_sched = (uint8_t *) _mm_malloc( (AES_BlockSize/8)*(AES_128_numRounds+1), ALIGN_BYTES);
+      AES_128_Key_Expansion(key,key_sched);
+      break;
+    case AES_192:
+      key_sched = (uint8_t *) _mm_malloc( (AES_BlockSize/8)*(AES_192_numRounds+1), ALIGN_BYTES);
+      AES_192_Key_Expansion(key,key_sched);
+      break;
+    case AES_256:
+      key_sched = (uint8_t *) _mm_malloc( (AES_BlockSize/8)*(AES_256_numRounds+1), ALIGN_BYTES);
+      AES_256_Key_Expansion(key,key_sched);
+      break;
+  }
+  return key_sched;
+}
+
+
+/** AES-128-CTR Pipelined Implementations **/
+static ALIGN const uint32_t ONE[4] = {1, 0, 0, 0};
+static ALIGN const uint32_t TWO[4] = {2, 0, 0, 0};
+static ALIGN const uint32_t FOUR[4] = {4, 0, 0, 0};
+static ALIGN const uint32_t EIGHT[4] = {8, 0, 0, 0};
+static ALIGN const uint64_t BSWAP64[2] = {0x08090a0b0c0d0e0f, 0x0001020304050607};
+
+#define AES1_CIPHER(BLOCK, KEY)                             \
+  (BLOCK) = XOR((BLOCK), ((__m128i *) (KEY))[0]);           \
+  for (j = 1; j < number_of_rounds; j++) {                  \
+    (BLOCK) = AESENC((BLOCK), ((__m128i *) (KEY))[j]);      \
+  };                                                        \
+  (BLOCK) = AESENCLAST((BLOCK), ((__m128i *) (KEY))[j]);
+
+#define AES2_CIPHER(BLOCK0, BLOCK1, KEY)                    \
+  (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
+  (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
+  for (j = 1; j < number_of_rounds; j++) {                  \
+    (BLOCK0) = AESENC((BLOCK0), ((__m128i *) (KEY))[j]);    \
+    (BLOCK1) = AESENC((BLOCK1), ((__m128i *) (KEY))[j]);    \
+  };                                                        \
+  (BLOCK0) = AESENCLAST((BLOCK0), ((__m128i *) (KEY))[j]);  \
+  (BLOCK1) = AESENCLAST((BLOCK1), ((__m128i *) (KEY))[j]);
+
+#define AES4_CIPHER(BLOCK0, BLOCK1, BLOCK2, BLOCK3, KEY)    \
+  (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
+  (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
+  (BLOCK2) = XOR((BLOCK2), ((__m128i *) (KEY))[0]);         \
+  (BLOCK3) = XOR((BLOCK3), ((__m128i *) (KEY))[0]);         \
+  for (j = 1; j < number_of_rounds; j++) {                  \
+    (BLOCK0) = AESENC((BLOCK0), ((__m128i *) (KEY))[j]);    \
+    (BLOCK1) = AESENC((BLOCK1), ((__m128i *) (KEY))[j]);    \
+    (BLOCK2) = AESENC((BLOCK2), ((__m128i *) (KEY))[j]);    \
+    (BLOCK3) = AESENC((BLOCK3), ((__m128i *) (KEY))[j]);    \
+  };                                                        \
+  (BLOCK0) = AESENCLAST((BLOCK0), ((__m128i *) (KEY))[j]);  \
+  (BLOCK1) = AESENCLAST((BLOCK1), ((__m128i *) (KEY))[j]);  \
+  (BLOCK2) = AESENCLAST((BLOCK2), ((__m128i *) (KEY))[j]);  \
+  (BLOCK3) = AESENCLAST((BLOCK3), ((__m128i *) (KEY))[j]);
+
+#define AES8_CIPHER(BLOCK0, BLOCK1, BLOCK2, BLOCK3, \
+                    BLOCK4, BLOCK5, BLOCK6, BLOCK7, KEY)    \
+  (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
+  (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
+  (BLOCK2) = XOR((BLOCK2), ((__m128i *) (KEY))[0]);         \
+  (BLOCK3) = XOR((BLOCK3), ((__m128i *) (KEY))[0]);         \
+  (BLOCK4) = XOR((BLOCK4), ((__m128i *) (KEY))[0]);         \
+  (BLOCK5) = XOR((BLOCK5), ((__m128i *) (KEY))[0]);         \
+  (BLOCK6) = XOR((BLOCK6), ((__m128i *) (KEY))[0]);         \
+  (BLOCK7) = XOR((BLOCK7), ((__m128i *) (KEY))[0]);         \
+  for (j = 1; j < number_of_rounds; j++) {                  \
+    (BLOCK0) = AESENC((BLOCK0), ((__m128i *) (KEY))[j]);    \
+    (BLOCK1) = AESENC((BLOCK1), ((__m128i *) (KEY))[j]);    \
+    (BLOCK2) = AESENC((BLOCK2), ((__m128i *) (KEY))[j]);    \
+    (BLOCK3) = AESENC((BLOCK3), ((__m128i *) (KEY))[j]);    \
+    (BLOCK4) = AESENC((BLOCK4), ((__m128i *) (KEY))[j]);    \
+    (BLOCK5) = AESENC((BLOCK5), ((__m128i *) (KEY))[j]);    \
+    (BLOCK6) = AESENC((BLOCK6), ((__m128i *) (KEY))[j]);    \
+    (BLOCK7) = AESENC((BLOCK7), ((__m128i *) (KEY))[j]);    \
+  };                                                        \
+  (BLOCK0) = AESENCLAST((BLOCK0), ((__m128i *) (KEY))[j]);  \
+  (BLOCK1) = AESENCLAST((BLOCK1), ((__m128i *) (KEY))[j]);  \
+  (BLOCK2) = AESENCLAST((BLOCK2), ((__m128i *) (KEY))[j]);  \
+  (BLOCK3) = AESENCLAST((BLOCK3), ((__m128i *) (KEY))[j]);  \
+  (BLOCK4) = AESENCLAST((BLOCK4), ((__m128i *) (KEY))[j]);  \
+  (BLOCK5) = AESENCLAST((BLOCK5), ((__m128i *) (KEY))[j]);  \
+  (BLOCK6) = AESENCLAST((BLOCK6), ((__m128i *) (KEY))[j]);  \
+  (BLOCK7) = AESENCLAST((BLOCK7), ((__m128i *) (KEY))[j]);
+
+void AES_CTR_encrypt(
+    const unsigned char *in,
+    unsigned char *out,
+    const unsigned char *ivec,
+    unsigned long length,
+    const unsigned char *key,
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
+  __m128i counter_be, counter_le;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
+
+  counter_be = _mm_loadu_si128((__m128i *) ivec);
+  counter_le = _mm_shuffle_epi8(counter_be, bswap);
+
+  for (i = 0; i < num_blocks; i++) {
+    counter_be = _mm_shuffle_epi8(counter_le, bswap);
+    counter_le = ADD(counter_le, one);
+    AES1_CIPHER(counter_be, key);
+    counter_be = XOR(counter_be, _mm_loadu_si128((__m128i *) in + i));
+    _mm_storeu_si128((__m128i *) out + i, counter_be);
+  }
+  if (remainder_bytes > 0) {
+    counter_be = _mm_shuffle_epi8(counter_le, bswap);
+    AES1_CIPHER(counter_be, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be)[j] ^ in[16 * i + j];
+    }
+  }
+}
+
+void AES_CTR_encrypt_pipe2(
+    const unsigned char *in,
+    unsigned char *out,
+    const unsigned char *ivec,
+    unsigned long length,
+    const unsigned char *key,
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i two = _mm_load_si128((__m128i *) TWO);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
+  __m128i counter_be0, counter_le0;
+  __m128i counter_be1, counter_le1;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
+
+  counter_be0 = _mm_loadu_si128((__m128i *) ivec);
+  counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
+  counter_le1 = ADD(counter_le0, one);
+
+  for (i = 0; i < num_blocks / 2; i++) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
+    counter_le0 = ADD(counter_le0, two);
+    counter_le1 = ADD(counter_le1, two);
+    AES2_CIPHER(counter_be0, counter_be1, key);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 2 * i + 0));
+    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 2 * i + 1));
+    _mm_storeu_si128((__m128i *) out + 2 * i + 0, counter_be0);
+    _mm_storeu_si128((__m128i *) out + 2 * i + 1, counter_be1);
+  }
+  for (i = 2 * i; i < num_blocks; i++) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    counter_le0 = ADD(counter_le0, one);
+    AES1_CIPHER(counter_be0, key);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
+    _mm_storeu_si128((__m128i *) out + i, counter_be0);
+  }
+  if (remainder_bytes > 0) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    AES1_CIPHER(counter_be0, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
+    }
+  }
+}
+
+void AES_CTR_encrypt_pipe4(
+    const unsigned char *in,
+    unsigned char *out,
+    const unsigned char *ivec,
+    unsigned long length,
+    const unsigned char *key,
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i four = _mm_load_si128((__m128i *) FOUR);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
+  __m128i counter_be0, counter_le0;
+  __m128i counter_be1, counter_le1;
+  __m128i counter_be2, counter_le2;
+  __m128i counter_be3, counter_le3;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
+
+  counter_be0 = _mm_loadu_si128((__m128i *) ivec);
+  counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
+  counter_le1 = ADD(counter_le0, one);
+  counter_le2 = ADD(counter_le1, one);
+  counter_le3 = ADD(counter_le2, one);
+
+  for (i = 0; i < num_blocks / 4; i++) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
+    counter_be2 = _mm_shuffle_epi8(counter_le2, bswap);
+    counter_be3 = _mm_shuffle_epi8(counter_le3, bswap);
+    counter_le0 = ADD(counter_le0, four);
+    counter_le1 = ADD(counter_le1, four);
+    counter_le2 = ADD(counter_le2, four);
+    counter_le3 = ADD(counter_le3, four);
+    AES4_CIPHER(counter_be0, counter_be1, counter_be2, counter_be3, key);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 4 * i + 0));
+    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 4 * i + 1));
+    counter_be2 = XOR(counter_be2, _mm_loadu_si128((__m128i *) in + 4 * i + 2));
+    counter_be3 = XOR(counter_be3, _mm_loadu_si128((__m128i *) in + 4 * i + 3));
+    _mm_storeu_si128((__m128i *) out + 4 * i + 0, counter_be0);
+    _mm_storeu_si128((__m128i *) out + 4 * i + 1, counter_be1);
+    _mm_storeu_si128((__m128i *) out + 4 * i + 2, counter_be2);
+    _mm_storeu_si128((__m128i *) out + 4 * i + 3, counter_be3);
+  }
+  for (i = 4 * i; i < num_blocks; i++) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    counter_le0 = ADD(counter_le0, one);
+    AES1_CIPHER(counter_be0, key);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
+    _mm_storeu_si128((__m128i *) out + i, counter_be0);
+  }
+  if (remainder_bytes > 0) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    AES1_CIPHER(counter_be0, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
+    }
+  }
+}
+
+void AES_CTR_encrypt_pipe8(
+    const unsigned char *in,
+    unsigned char *out,
+    const unsigned char *ivec,
+    unsigned long length,
+    const unsigned char *key,
+    const unsigned int number_of_rounds) {
+  const __m128i one = _mm_load_si128((__m128i *) ONE);
+  const __m128i eight = _mm_load_si128((__m128i *) EIGHT);
+  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
+  __m128i counter_be0, counter_le0;
+  __m128i counter_be1, counter_le1;
+  __m128i counter_be2, counter_le2;
+  __m128i counter_be3, counter_le3;
+  __m128i counter_be4, counter_le4;
+  __m128i counter_be5, counter_le5;
+  __m128i counter_be6, counter_le6;
+  __m128i counter_be7, counter_le7;
+  unsigned long i = 0, j = 0;
+  unsigned long remainder_bytes = length % 16;
+  unsigned long num_blocks = length / 16;
+
+  counter_be0 = _mm_loadu_si128((__m128i *) ivec);
+  counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
+  counter_le1 = ADD(counter_le0, one);
+  counter_le2 = ADD(counter_le1, one);
+  counter_le3 = ADD(counter_le2, one);
+  counter_le4 = ADD(counter_le3, one);
+  counter_le5 = ADD(counter_le4, one);
+  counter_le6 = ADD(counter_le5, one);
+  counter_le7 = ADD(counter_le6, one);
+
+  for (i = 0; i < num_blocks / 8; i++) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
+    counter_be2 = _mm_shuffle_epi8(counter_le2, bswap);
+    counter_be3 = _mm_shuffle_epi8(counter_le3, bswap);
+    counter_be4 = _mm_shuffle_epi8(counter_le4, bswap);
+    counter_be5 = _mm_shuffle_epi8(counter_le5, bswap);
+    counter_be6 = _mm_shuffle_epi8(counter_le6, bswap);
+    counter_be7 = _mm_shuffle_epi8(counter_le7, bswap);
+    counter_le0 = ADD(counter_le0, eight);
+    counter_le1 = ADD(counter_le1, eight);
+    counter_le2 = ADD(counter_le2, eight);
+    counter_le3 = ADD(counter_le3, eight);
+    counter_le4 = ADD(counter_le4, eight);
+    counter_le5 = ADD(counter_le5, eight);
+    counter_le6 = ADD(counter_le6, eight);
+    counter_le7 = ADD(counter_le7, eight);
+    AES8_CIPHER(counter_be0, counter_be1, counter_be2, counter_be3,
+                counter_be4, counter_be5, counter_be6, counter_be7, key);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 8 * i + 0));
+    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 8 * i + 1));
+    counter_be2 = XOR(counter_be2, _mm_loadu_si128((__m128i *) in + 8 * i + 2));
+    counter_be3 = XOR(counter_be3, _mm_loadu_si128((__m128i *) in + 8 * i + 3));
+    counter_be4 = XOR(counter_be4, _mm_loadu_si128((__m128i *) in + 8 * i + 4));
+    counter_be5 = XOR(counter_be5, _mm_loadu_si128((__m128i *) in + 8 * i + 5));
+    counter_be6 = XOR(counter_be6, _mm_loadu_si128((__m128i *) in + 8 * i + 6));
+    counter_be7 = XOR(counter_be7, _mm_loadu_si128((__m128i *) in + 8 * i + 7));
+    _mm_storeu_si128((__m128i *) out + 8 * i + 0, counter_be0);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 1, counter_be1);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 2, counter_be2);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 3, counter_be3);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 4, counter_be4);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 5, counter_be5);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 6, counter_be6);
+    _mm_storeu_si128((__m128i *) out + 8 * i + 7, counter_be7);
+  }
+  for (i = 8 * i; i < num_blocks; i++) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    counter_le0 = ADD(counter_le0, one);
+    AES1_CIPHER(counter_be0, key);
+    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
+    _mm_storeu_si128((__m128i *) out + i, counter_be0);
+  }
+  if (remainder_bytes > 0) {
+    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
+    AES1_CIPHER(counter_be0, key);
+    for (j = 0; j < remainder_bytes; j++) {
+      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
+    }
+  }
+}
+
+#undef AES1_CIPHER
+#undef AES2_CIPHER
+#undef AES4_CIPHER
+#undef AES8_CIPHER
+
+
+/** AES-CBC Implementations */
 
 void AES_CBC_encrypt(
     const unsigned char *in,
@@ -580,302 +1037,5 @@ void AES_CBC_encrypt_8w(
     _mm_storeu_si128(&((__m128i *) (out[6]))[i], feedback6);
     _mm_storeu_si128(&((__m128i *) (out[7]))[i], feedback7);
   }
-
 }
 
-/** AES-128-CTR Pipelined Implementations **/
-static ALIGN const uint32_t ONE[4] = {1, 0, 0, 0};
-static ALIGN const uint32_t TWO[4] = {2, 0, 0, 0};
-static ALIGN const uint32_t FOUR[4] = {4, 0, 0, 0};
-static ALIGN const uint32_t EIGHT[4] = {8, 0, 0, 0};
-static ALIGN const uint64_t BSWAP64[2] = {0x08090a0b0c0d0e0f, 0x0001020304050607};
-
-#define AES1_CIPHER(BLOCK, KEY)                             \
-  (BLOCK) = XOR((BLOCK), ((__m128i *) (KEY))[0]);           \
-  for (j = 1; j < number_of_rounds; j++) {                  \
-    (BLOCK) = AESENC((BLOCK), ((__m128i *) (KEY))[j]);      \
-  };                                                        \
-  (BLOCK) = AESENCLAST((BLOCK), ((__m128i *) (KEY))[j]);
-
-#define AES2_CIPHER(BLOCK0, BLOCK1, KEY)                    \
-  (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
-  (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
-  for (j = 1; j < number_of_rounds; j++) {                  \
-    (BLOCK0) = AESENC((BLOCK0), ((__m128i *) (KEY))[j]);    \
-    (BLOCK1) = AESENC((BLOCK1), ((__m128i *) (KEY))[j]);    \
-  };                                                        \
-  (BLOCK0) = AESENCLAST((BLOCK0), ((__m128i *) (KEY))[j]);  \
-  (BLOCK1) = AESENCLAST((BLOCK1), ((__m128i *) (KEY))[j]);
-
-#define AES4_CIPHER(BLOCK0, BLOCK1, BLOCK2, BLOCK3, KEY)    \
-  (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
-  (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
-  (BLOCK2) = XOR((BLOCK2), ((__m128i *) (KEY))[0]);         \
-  (BLOCK3) = XOR((BLOCK3), ((__m128i *) (KEY))[0]);         \
-  for (j = 1; j < number_of_rounds; j++) {                  \
-    (BLOCK0) = AESENC((BLOCK0), ((__m128i *) (KEY))[j]);    \
-    (BLOCK1) = AESENC((BLOCK1), ((__m128i *) (KEY))[j]);    \
-    (BLOCK2) = AESENC((BLOCK2), ((__m128i *) (KEY))[j]);    \
-    (BLOCK3) = AESENC((BLOCK3), ((__m128i *) (KEY))[j]);    \
-  };                                                        \
-  (BLOCK0) = AESENCLAST((BLOCK0), ((__m128i *) (KEY))[j]);  \
-  (BLOCK1) = AESENCLAST((BLOCK1), ((__m128i *) (KEY))[j]);  \
-  (BLOCK2) = AESENCLAST((BLOCK2), ((__m128i *) (KEY))[j]);  \
-  (BLOCK3) = AESENCLAST((BLOCK3), ((__m128i *) (KEY))[j]);
-
-#define AES8_CIPHER(BLOCK0, BLOCK1, BLOCK2, BLOCK3, \
-                    BLOCK4, BLOCK5, BLOCK6, BLOCK7, KEY)    \
-  (BLOCK0) = XOR((BLOCK0), ((__m128i *) (KEY))[0]);         \
-  (BLOCK1) = XOR((BLOCK1), ((__m128i *) (KEY))[0]);         \
-  (BLOCK2) = XOR((BLOCK2), ((__m128i *) (KEY))[0]);         \
-  (BLOCK3) = XOR((BLOCK3), ((__m128i *) (KEY))[0]);         \
-  (BLOCK4) = XOR((BLOCK4), ((__m128i *) (KEY))[0]);         \
-  (BLOCK5) = XOR((BLOCK5), ((__m128i *) (KEY))[0]);         \
-  (BLOCK6) = XOR((BLOCK6), ((__m128i *) (KEY))[0]);         \
-  (BLOCK7) = XOR((BLOCK7), ((__m128i *) (KEY))[0]);         \
-  for (j = 1; j < number_of_rounds; j++) {                  \
-    (BLOCK0) = AESENC((BLOCK0), ((__m128i *) (KEY))[j]);    \
-    (BLOCK1) = AESENC((BLOCK1), ((__m128i *) (KEY))[j]);    \
-    (BLOCK2) = AESENC((BLOCK2), ((__m128i *) (KEY))[j]);    \
-    (BLOCK3) = AESENC((BLOCK3), ((__m128i *) (KEY))[j]);    \
-    (BLOCK4) = AESENC((BLOCK4), ((__m128i *) (KEY))[j]);    \
-    (BLOCK5) = AESENC((BLOCK5), ((__m128i *) (KEY))[j]);    \
-    (BLOCK6) = AESENC((BLOCK6), ((__m128i *) (KEY))[j]);    \
-    (BLOCK7) = AESENC((BLOCK7), ((__m128i *) (KEY))[j]);    \
-  };                                                        \
-  (BLOCK0) = AESENCLAST((BLOCK0), ((__m128i *) (KEY))[j]);  \
-  (BLOCK1) = AESENCLAST((BLOCK1), ((__m128i *) (KEY))[j]);  \
-  (BLOCK2) = AESENCLAST((BLOCK2), ((__m128i *) (KEY))[j]);  \
-  (BLOCK3) = AESENCLAST((BLOCK3), ((__m128i *) (KEY))[j]);  \
-  (BLOCK4) = AESENCLAST((BLOCK4), ((__m128i *) (KEY))[j]);  \
-  (BLOCK5) = AESENCLAST((BLOCK5), ((__m128i *) (KEY))[j]);  \
-  (BLOCK6) = AESENCLAST((BLOCK6), ((__m128i *) (KEY))[j]);  \
-  (BLOCK7) = AESENCLAST((BLOCK7), ((__m128i *) (KEY))[j]);
-
-void AES_CTR_encrypt(
-    const unsigned char *in,
-    unsigned char *out,
-    const unsigned char *ivec,
-    unsigned long length,
-    const unsigned char *key,
-    const unsigned int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i *) ONE);
-  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
-  __m128i counter_be, counter_le;
-  unsigned long i = 0, j = 0;
-  unsigned long remainder_bytes = length % 16;
-  unsigned long num_blocks = length / 16;
-
-  counter_be = _mm_loadu_si128((__m128i *) ivec);
-  counter_le = _mm_shuffle_epi8(counter_be, bswap);
-
-  for (i = 0; i < num_blocks; i++) {
-    counter_be = _mm_shuffle_epi8(counter_le, bswap);
-    counter_le = ADD(counter_le, one);
-    AES1_CIPHER(counter_be, key);
-    counter_be = XOR(counter_be, _mm_loadu_si128((__m128i *) in + i));
-    _mm_storeu_si128((__m128i *) out + i, counter_be);
-  }
-  if (remainder_bytes > 0) {
-    counter_be = _mm_shuffle_epi8(counter_le, bswap);
-    AES1_CIPHER(counter_be, key);
-    for (j = 0; j < remainder_bytes; j++) {
-      out[16 * i + j] = ((uint8_t *) &counter_be)[j] ^ in[16 * i + j];
-    }
-  }
-}
-
-void AES_CTR_encrypt_pipe2(
-    const unsigned char *in,
-    unsigned char *out,
-    const unsigned char *ivec,
-    unsigned long length,
-    const unsigned char *key,
-    const unsigned int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i *) ONE);
-  const __m128i two = _mm_load_si128((__m128i *) TWO);
-  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
-  __m128i counter_be0, counter_le0;
-  __m128i counter_be1, counter_le1;
-  unsigned long i = 0, j = 0;
-  unsigned long remainder_bytes = length % 16;
-  unsigned long num_blocks = length / 16;
-
-  counter_be0 = _mm_loadu_si128((__m128i *) ivec);
-  counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
-  counter_le1 = ADD(counter_le0, one);
-
-  for (i = 0; i < num_blocks / 2; i++) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
-    counter_le0 = ADD(counter_le0, two);
-    counter_le1 = ADD(counter_le1, two);
-    AES2_CIPHER(counter_be0, counter_be1, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 2 * i + 0));
-    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 2 * i + 1));
-    _mm_storeu_si128((__m128i *) out + 2 * i + 0, counter_be0);
-    _mm_storeu_si128((__m128i *) out + 2 * i + 1, counter_be1);
-  }
-  for (i = 2 * i; i < num_blocks; i++) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    counter_le0 = ADD(counter_le0, one);
-    AES1_CIPHER(counter_be0, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
-    _mm_storeu_si128((__m128i *) out + i, counter_be0);
-  }
-  if (remainder_bytes > 0) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    AES1_CIPHER(counter_be0, key);
-    for (j = 0; j < remainder_bytes; j++) {
-      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
-    }
-  }
-}
-
-void AES_CTR_encrypt_pipe4(
-    const unsigned char *in,
-    unsigned char *out,
-    const unsigned char *ivec,
-    unsigned long length,
-    const unsigned char *key,
-    const unsigned int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i *) ONE);
-  const __m128i four = _mm_load_si128((__m128i *) FOUR);
-  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
-  __m128i counter_be0, counter_le0;
-  __m128i counter_be1, counter_le1;
-  __m128i counter_be2, counter_le2;
-  __m128i counter_be3, counter_le3;
-  unsigned long i = 0, j = 0;
-  unsigned long remainder_bytes = length % 16;
-  unsigned long num_blocks = length / 16;
-
-  counter_be0 = _mm_loadu_si128((__m128i *) ivec);
-  counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
-  counter_le1 = ADD(counter_le0, one);
-  counter_le2 = ADD(counter_le1, one);
-  counter_le3 = ADD(counter_le2, one);
-
-  for (i = 0; i < num_blocks / 4; i++) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
-    counter_be2 = _mm_shuffle_epi8(counter_le2, bswap);
-    counter_be3 = _mm_shuffle_epi8(counter_le3, bswap);
-    counter_le0 = ADD(counter_le0, four);
-    counter_le1 = ADD(counter_le1, four);
-    counter_le2 = ADD(counter_le2, four);
-    counter_le3 = ADD(counter_le3, four);
-    AES4_CIPHER(counter_be0, counter_be1, counter_be2, counter_be3, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 4 * i + 0));
-    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 4 * i + 1));
-    counter_be2 = XOR(counter_be2, _mm_loadu_si128((__m128i *) in + 4 * i + 2));
-    counter_be3 = XOR(counter_be3, _mm_loadu_si128((__m128i *) in + 4 * i + 3));
-    _mm_storeu_si128((__m128i *) out + 4 * i + 0, counter_be0);
-    _mm_storeu_si128((__m128i *) out + 4 * i + 1, counter_be1);
-    _mm_storeu_si128((__m128i *) out + 4 * i + 2, counter_be2);
-    _mm_storeu_si128((__m128i *) out + 4 * i + 3, counter_be3);
-  }
-  for (i = 4 * i; i < num_blocks; i++) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    counter_le0 = ADD(counter_le0, one);
-    AES1_CIPHER(counter_be0, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
-    _mm_storeu_si128((__m128i *) out + i, counter_be0);
-  }
-  if (remainder_bytes > 0) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    AES1_CIPHER(counter_be0, key);
-    for (j = 0; j < remainder_bytes; j++) {
-      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
-    }
-  }
-}
-
-void AES_CTR_encrypt_pipe8(
-    const unsigned char *in,
-    unsigned char *out,
-    const unsigned char *ivec,
-    unsigned long length,
-    const unsigned char *key,
-    const unsigned int number_of_rounds) {
-  const __m128i one = _mm_load_si128((__m128i *) ONE);
-  const __m128i eight = _mm_load_si128((__m128i *) EIGHT);
-  const __m128i bswap = _mm_load_si128((__m128i *) BSWAP64);
-  __m128i counter_be0, counter_le0;
-  __m128i counter_be1, counter_le1;
-  __m128i counter_be2, counter_le2;
-  __m128i counter_be3, counter_le3;
-  __m128i counter_be4, counter_le4;
-  __m128i counter_be5, counter_le5;
-  __m128i counter_be6, counter_le6;
-  __m128i counter_be7, counter_le7;
-  unsigned long i = 0, j = 0;
-  unsigned long remainder_bytes = length % 16;
-  unsigned long num_blocks = length / 16;
-
-  counter_be0 = _mm_loadu_si128((__m128i *) ivec);
-  counter_le0 = _mm_shuffle_epi8(counter_be0, bswap);
-  counter_le1 = ADD(counter_le0, one);
-  counter_le2 = ADD(counter_le1, one);
-  counter_le3 = ADD(counter_le2, one);
-  counter_le4 = ADD(counter_le3, one);
-  counter_le5 = ADD(counter_le4, one);
-  counter_le6 = ADD(counter_le5, one);
-  counter_le7 = ADD(counter_le6, one);
-
-  for (i = 0; i < num_blocks / 8; i++) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    counter_be1 = _mm_shuffle_epi8(counter_le1, bswap);
-    counter_be2 = _mm_shuffle_epi8(counter_le2, bswap);
-    counter_be3 = _mm_shuffle_epi8(counter_le3, bswap);
-    counter_be4 = _mm_shuffle_epi8(counter_le4, bswap);
-    counter_be5 = _mm_shuffle_epi8(counter_le5, bswap);
-    counter_be6 = _mm_shuffle_epi8(counter_le6, bswap);
-    counter_be7 = _mm_shuffle_epi8(counter_le7, bswap);
-    counter_le0 = ADD(counter_le0, eight);
-    counter_le1 = ADD(counter_le1, eight);
-    counter_le2 = ADD(counter_le2, eight);
-    counter_le3 = ADD(counter_le3, eight);
-    counter_le4 = ADD(counter_le4, eight);
-    counter_le5 = ADD(counter_le5, eight);
-    counter_le6 = ADD(counter_le6, eight);
-    counter_le7 = ADD(counter_le7, eight);
-    AES8_CIPHER(counter_be0, counter_be1, counter_be2, counter_be3,
-                counter_be4, counter_be5, counter_be6, counter_be7, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + 8 * i + 0));
-    counter_be1 = XOR(counter_be1, _mm_loadu_si128((__m128i *) in + 8 * i + 1));
-    counter_be2 = XOR(counter_be2, _mm_loadu_si128((__m128i *) in + 8 * i + 2));
-    counter_be3 = XOR(counter_be3, _mm_loadu_si128((__m128i *) in + 8 * i + 3));
-    counter_be4 = XOR(counter_be4, _mm_loadu_si128((__m128i *) in + 8 * i + 4));
-    counter_be5 = XOR(counter_be5, _mm_loadu_si128((__m128i *) in + 8 * i + 5));
-    counter_be6 = XOR(counter_be6, _mm_loadu_si128((__m128i *) in + 8 * i + 6));
-    counter_be7 = XOR(counter_be7, _mm_loadu_si128((__m128i *) in + 8 * i + 7));
-    _mm_storeu_si128((__m128i *) out + 8 * i + 0, counter_be0);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 1, counter_be1);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 2, counter_be2);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 3, counter_be3);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 4, counter_be4);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 5, counter_be5);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 6, counter_be6);
-    _mm_storeu_si128((__m128i *) out + 8 * i + 7, counter_be7);
-  }
-  for (i = 8 * i; i < num_blocks; i++) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    counter_le0 = ADD(counter_le0, one);
-    AES1_CIPHER(counter_be0, key);
-    counter_be0 = XOR(counter_be0, _mm_loadu_si128((__m128i *) in + i));
-    _mm_storeu_si128((__m128i *) out + i, counter_be0);
-  }
-  if (remainder_bytes > 0) {
-    counter_be0 = _mm_shuffle_epi8(counter_le0, bswap);
-    AES1_CIPHER(counter_be0, key);
-    for (j = 0; j < remainder_bytes; j++) {
-      out[16 * i + j] = ((uint8_t *) &counter_be0)[j] ^ in[16 * i + j];
-    }
-  }
-}
-
-#undef AES1_CIPHER
-#undef AES2_CIPHER
-#undef AES4_CIPHER
-#undef AES8_CIPHER

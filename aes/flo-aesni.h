@@ -39,19 +39,14 @@ extern "C"{
 #include <stdint.h>
 #include <immintrin.h>
 
-#define AES_BlockSize_Bits 128
+#define AES_BlockSize 128
 
-enum NRounds {
-  AES_128_Rounds = 10,
-  AES_192_Rounds = 12,
-  AES_256_Rounds = 14
-};
+typedef enum aes_cipher_id{
+  AES_128 = 128,
+  AES_192 = 192,
+  AES_256 = 256
+} AES_CIPHER_ID;
 
-enum KeySizeBytes {
-  AES_128_Bytes = 16,
-  AES_192_Bytes = 24,
-  AES_256_Bytes = 32
-};
 
 #ifndef ALIGN_BYTES
 #define ALIGN_BYTES 64
@@ -65,11 +60,7 @@ enum KeySizeBytes {
 #endif
 #endif
 
-typedef uint8_t KeySchedule[(128 / 8) * 11];
-typedef uint8_t Key[(128 / 8)];
-
-void AES_128_Key_Expansion(const unsigned char *userkey,
-                           unsigned char *key);
+uint8_t * AES_Key_Expansion(const unsigned char *key, AES_CIPHER_ID id);
 
 /** AES-CBC Implementations **/
 
@@ -167,6 +158,45 @@ typedef void (*AES_CTR_Implementation)(
     unsigned long length,
     const unsigned char *key,
     const unsigned int number_of_rounds);
+
+#define AES_128_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+
+#define AES_192_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+
+#define AES_256_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
+
+
+#define AES_128_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+
+#define AES_192_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+
+#define AES_256_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
+
+
+#define AES_128_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+
+#define AES_192_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+
+#define AES_256_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
+
+
+#define AES_128_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+
+#define AES_192_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+
+#define AES_256_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
+        AES_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
 
 void AES_CTR_encrypt(const unsigned char *in,
                      unsigned char *out,
