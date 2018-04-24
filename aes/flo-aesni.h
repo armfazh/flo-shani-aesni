@@ -9,8 +9,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -24,29 +24,19 @@
 #define PROJECT_AESNI_H
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
-#ifndef ALIGN_BYTES
-#define ALIGN_BYTES 32
-#endif
-#ifdef __INTEL_COMPILER
-#define ALIGN __declspec(align(ALIGN_BYTES))
-#else
-#define ALIGN __attribute__ ((aligned (ALIGN_BYTES)))
-#endif
-
-#include <stdint.h>
 #include <immintrin.h>
+#include <stdint.h>
 
 #define AES_BlockSize 128
 
-typedef enum aes_cipher_id{
+typedef enum aes_cipher_id {
   AES_128 = 128,
   AES_192 = 192,
   AES_256 = 256
 } AES_CIPHER_ID;
-
 
 #ifndef ALIGN_BYTES
 #define ALIGN_BYTES 64
@@ -56,178 +46,76 @@ typedef enum aes_cipher_id{
 #ifdef __INTEL_COMPILER
 #define ALIGN __declspec(align(ALIGN_BYTES))
 #else
-#define ALIGN __attribute__ ((aligned (ALIGN_BYTES)))
+#define ALIGN __attribute__((aligned(ALIGN_BYTES)))
 #endif
 #endif
 
-uint8_t * AES_Key_Expansion(const unsigned char *key, AES_CIPHER_ID id);
-
-/** AES-CBC Implementations **/
-
-void AES_CBC_encrypt(const unsigned char *in,
-                     unsigned char *out,
-                     unsigned char ivec[16],
-                     unsigned long length,
-                     unsigned char *key,
-                     const int number_of_rounds);
-
-void AES_CBC_decrypt(const unsigned char *in,
-                     unsigned char *out,
-                     unsigned char ivec[16],
-                     unsigned long length,
-                     unsigned char *key,
-                     const int number_of_rounds);
-
-
-void AES_CBC_decrypt_pipe2(const unsigned char *in,
-                           unsigned char *out,
-                           unsigned char *ivec,
-                           unsigned long length,
-                           unsigned char *key_schedule,
-                           const unsigned int nr);
-
-void AES_CBC_decrypt_pipe4(const unsigned char *in,
-                           unsigned char *out,
-                           unsigned char *ivec,
-                           unsigned long length,
-                           unsigned char *key_schedule,
-                           const unsigned int nr);
-
-void AES_CBC_decrypt_pipe8(const unsigned char *in,
-                           unsigned char *out,
-                           unsigned char ivec[16],
-                           unsigned long length,
-                           unsigned char *key_schedule,
-                           const unsigned int nr);
-
-void AES_CBC_encrypt_2w(const unsigned char **in,
-                        unsigned char **out,
-                        unsigned char **ivec,
-                        unsigned long length,
-                        const unsigned char *key,
-                        const int nr);
-
-void AES_CBC_encrypt_4w(const unsigned char **in,
-                        unsigned char **out,
-                        unsigned char **ivec,
-                        unsigned long length,
-                        const unsigned char *key,
-                        const int nr);
-
-void AES_CBC_encrypt_6w(const unsigned char **in,
-                        unsigned char **out,
-                        unsigned char **ivec,
-                        unsigned long length,
-                        const unsigned char *key,
-                        const int nr);
-
-void AES_CBC_encrypt_8w(const unsigned char **in,
-                        unsigned char **out,
-                        unsigned char **ivec,
-                        unsigned long length,
-                        const unsigned char *key,
-                        const int nr);
-
-void AES_CBC_decrypt_2w(const unsigned char *in[2],
-                        unsigned char *out[2],
-                        unsigned char *ivec[2],
-                        unsigned long length,
-                        unsigned char *key,
-                        const int number_of_rounds);
-
-void AES_CBC_decrypt_4w(const unsigned char *in[4],
-                        unsigned char *out[4],
-                        unsigned char *ivec[4],
-                        unsigned long length,
-                        unsigned char *key,
-                        const int number_of_rounds);
-
-void AES_CBC_decrypt_8w(const unsigned char *in[8],
-                        unsigned char *out[8],
-                        unsigned char *ivec[8],
-                        unsigned long length,
-                        unsigned char *key,
-                        const int number_of_rounds);
+uint8_t *AES_KeyExpansion(const unsigned char *key, AES_CIPHER_ID id);
 
 /** AES-CTR Pipelined Implementations **/
 
-typedef void (*AES_CTR_Implementation)(
-    const unsigned char *in,
-    unsigned char *out,
-    const unsigned char *ivec,
-    unsigned long length,
-    const unsigned char *key,
-    const unsigned int number_of_rounds);
+void AES_CTR_Encrypt(const unsigned char *in, unsigned char *out,
+                     const unsigned char *ivec, unsigned long length,
+                     const unsigned char *key, AES_CIPHER_ID id);
 
-#define AES_128_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+void AES_CTR_Encrypt_Pipelined(const unsigned char *in, unsigned char *out,
+                               const unsigned char *iv,
+                               unsigned long message_length,
+                               const unsigned char *key_sched, AES_CIPHER_ID id,
+                               int pipeline_overlapped);
 
-#define AES_192_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+/** AES-CBC Implementations **/
 
-#define AES_256_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
+void AES_CBC_encrypt(const unsigned char *in, unsigned char *out,
+                     unsigned char ivec[16], unsigned long length,
+                     unsigned char *key, const int number_of_rounds);
 
+void AES_CBC_decrypt(const unsigned char *in, unsigned char *out,
+                     unsigned char ivec[16], unsigned long length,
+                     unsigned char *key, const int number_of_rounds);
 
-#define AES_128_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+void AES_CBC_decrypt_pipe2(const unsigned char *in, unsigned char *out,
+                           unsigned char *ivec, unsigned long length,
+                           unsigned char *key_schedule, const unsigned int nr);
 
-#define AES_192_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+void AES_CBC_decrypt_pipe4(const unsigned char *in, unsigned char *out,
+                           unsigned char *ivec, unsigned long length,
+                           unsigned char *key_schedule, const unsigned int nr);
 
-#define AES_256_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe2(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
+void AES_CBC_decrypt_pipe8(const unsigned char *in, unsigned char *out,
+                           unsigned char ivec[16], unsigned long length,
+                           unsigned char *key_schedule, const unsigned int nr);
 
+void AES_CBC_encrypt_2w(const unsigned char **in, unsigned char **out,
+                        unsigned char **ivec, unsigned long length,
+                        const unsigned char *key, const int nr);
 
-#define AES_128_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+void AES_CBC_encrypt_4w(const unsigned char **in, unsigned char **out,
+                        unsigned char **ivec, unsigned long length,
+                        const unsigned char *key, const int nr);
 
-#define AES_192_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
+void AES_CBC_encrypt_6w(const unsigned char **in, unsigned char **out,
+                        unsigned char **ivec, unsigned long length,
+                        const unsigned char *key, const int nr);
 
-#define AES_256_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe4(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
+void AES_CBC_encrypt_8w(const unsigned char **in, unsigned char **out,
+                        unsigned char **ivec, unsigned long length,
+                        const unsigned char *key, const int nr);
 
+void AES_CBC_decrypt_2w(const unsigned char *in[2], unsigned char *out[2],
+                        unsigned char *ivec[2], unsigned long length,
+                        unsigned char *key, const int number_of_rounds);
 
-#define AES_128_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 10)
+void AES_CBC_decrypt_4w(const unsigned char *in[4], unsigned char *out[4],
+                        unsigned char *ivec[4], unsigned long length,
+                        unsigned char *key, const int number_of_rounds);
 
-#define AES_192_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 12)
-
-#define AES_256_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY) \
-        AES_CTR_encrypt_pipe8(PLAINTEXT,CIPHERTEXT,IV,MSG_LENGHT,KEY, 14)
-
-void AES_CTR_encrypt(const unsigned char *in,
-                     unsigned char *out,
-                     const unsigned char *ivec,
-                     unsigned long length,
-                     const unsigned char *key,
-                     const unsigned int number_of_rounds);
-
-void AES_CTR_encrypt_pipe2(const unsigned char *in,
-                           unsigned char *out,
-                           const unsigned char *ivec,
-                           unsigned long length,
-                           const unsigned char *key,
-                           const unsigned int number_of_rounds);
-
-void AES_CTR_encrypt_pipe4(const unsigned char *in,
-                           unsigned char *out,
-                           const unsigned char *ivec,
-                           unsigned long length,
-                           const unsigned char *key,
-                           const unsigned int number_of_rounds);
-
-void AES_CTR_encrypt_pipe8(const unsigned char *in,
-                           unsigned char *out,
-                           const unsigned char *ivec,
-                           unsigned long length,
-                           const unsigned char *key,
-                           const unsigned int number_of_rounds);
+void AES_CBC_decrypt_8w(const unsigned char *in[8], unsigned char *out[8],
+                        unsigned char *ivec[8], unsigned long length,
+                        unsigned char *key, const int number_of_rounds);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //PROJECT_AESNI_H
+#endif  // PROJECT_AESNI_H
