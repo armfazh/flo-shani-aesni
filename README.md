@@ -11,7 +11,7 @@ This source code is part of the research work titled: _"SoK: A Performance Evalu
 
 A peer-reviewed paper will be presented in the The 5th ACM ASIA Public-Key Cryptography Workshop ([APKC2018](https://www2.nict.go.jp/security/apkc2018/)).
  - Paper [[DOI](http://doi.org/10.1145/3197507.3197511)]
- - Slides [[PDF](http://www.ic.unicamp.br/~ra142685/)].
+ - Slides [[PDF](http://www.ic.unicamp.br/~ra142685/sok-apkc.pdf)].
 
 
 To cite this work use:
