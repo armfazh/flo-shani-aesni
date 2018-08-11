@@ -18,17 +18,25 @@ To cite this work use:
 
 ```tex
 @inproceedings{faz_apkc2018,
-    author    = {Armando Faz-Hern\'andez and Julio L\'opez and 
-                 Ana Karina D. S. de Oliveira},
-    editor    = {},
+    author    = {Faz-Hernandez, Armando and L\'{o}pez, Julio and 
+	             de~Oliveira, Ana Karina D. S.},
     title     = {SoK: A Performance Evaluation of Cryptographic 
-                 Instruction Sets on Modern Architectures},
-    booktitle = {APKC’18: 5th ACM ASIA Public-Key Cryptography
-                 Workshop, June 4, 2018, Incheon, Republic of Korea},
+	             Instruction Sets on Modern Architectures},
+    booktitle = {Proceedings of the 5th ACM on ASIA Public-Key 
+	             Cryptography Workshop},
+    series    = {APKC '18},
     year      = {2018},
-    publisher = {ACM},
-    pages     = "10",
+    isbn      = {978-1-4503-5756-2},
+    location  = {Incheon, Republic of Korea},
+    pages     = {9--18},
+    numpages  = {10},
+    url       = {http://doi.acm.org/10.1145/3197507.3197511},
     doi       = {10.1145/3197507.3197511},
+    acmid     = {3197511},
+    publisher = {ACM},
+    address   = {New York, NY, USA},
+    keywords  = {aes-ni, data encryption, hash-based digital signatures,
+	             sha-ni, vector instructions},
 }
 ```
 ----
