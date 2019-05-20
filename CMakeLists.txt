@@ -34,6 +34,10 @@ link_directories(/opt/ossl102/lib)
 add_subdirectory(sha256)
 add_subdirectory(aes)
 add_subdirectory(aegis)
+add_subdirectory(1Xmssdraft07sha256_nway)
+# add_subdirectory(1Xmssdraft07sha_ni)
+# add_subdirectory(2XmssMTdraft07-sha256_nway)
+# add_subdirectory(2XmssMTdraft07-sha_ni)
 
 # auxiliary libraries
 add_subdirectory(cpuid)

@@ -72,4 +72,36 @@
 
 #define CLOCKS(FUNCTION) CLOCKS_RANDOM(while (0), FUNCTION)
 
+#define oper_second(RANDOM,LABEL,FUNCTION) \
+do{\
+	printf("%-14s : ",#LABEL);\
+	RANDOM;\
+\
+	unsigned i;\
+	uint64_t start, end;\
+	const unsigned iterations = 1000;\
+	uint64_t start_c, end_c;\
+\
+	/* Load the caches*/\
+	for (i = 0; i < 10; ++i) {\
+	     FUNCTION ;\
+	}\
+\
+	start = time_now();\
+	start_c = cycles_now();\
+	for (i = 0; i < iterations; ++i) {\
+		FUNCTION; \
+	}\
+	end = time_now();\
+	end_c = cycles_now();\
+\
+	printf("%3lu µs, %8.1f oper/s, %6lu cycles/op\n",\
+			(unsigned long) ((end - start) / iterations),\
+			iterations*1000000. / (end - start),\
+			(unsigned long)((end_c-start_c)/iterations) );\
+}while(0)
+
+uint64_t time_now();
+uint64_t cycles_now(void);
+
 #endif /* CLOCKS_H */
