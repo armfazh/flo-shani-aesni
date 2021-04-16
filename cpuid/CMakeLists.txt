@@ -20,3 +20,4 @@
 # OR OTHER DEALINGS IN THE SOFTWARE.
 cmake_minimum_required(VERSION 3.0)
 add_library(flo-cpuid flo-cpuid.h flo-cpuid.c)
+install(TARGETS flo-cpuid DESTINATION lib)

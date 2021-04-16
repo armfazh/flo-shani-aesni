@@ -26,9 +26,8 @@ set(CMAKE_C_STANDARD 99)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH  ${CMAKE_BINARY_DIR}/lib )
 
-#point to the instalation directory of OpenSSL version 1.0.2
-include_directories(/opt/ossl102/include)
-link_directories(/opt/ossl102/lib)
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 
 # our library
 add_subdirectory(sha256)
