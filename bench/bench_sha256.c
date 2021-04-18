@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <openssl/sha.h>
 #include <flo-shani.h>
-#include <flo-random.h>
+#include <flo-prng.h>
 #include <flo-cpuid.h>
 #include "clocks.h"
 

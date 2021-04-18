@@ -21,7 +21,7 @@
 
 cmake_minimum_required(VERSION 3.0)
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD 98)
+set(CMAKE_CXX_STANDARD 11)
 
 include_directories(../aes)
 include_directories(../sha256)

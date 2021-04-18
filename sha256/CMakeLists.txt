@@ -18,8 +18,8 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 # OR OTHER DEALINGS IN THE SOFTWARE.
-
 cmake_minimum_required(VERSION 3.0)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -pedantic -mavx2 -msha")
 add_library(flo-shani flo-shani.c sha256_vectorized.c flo-shani.h)
-
+set_target_properties(flo-shani PROPERTIES PUBLIC_HEADER "flo-shani.h")
+install(TARGETS flo-shani LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)

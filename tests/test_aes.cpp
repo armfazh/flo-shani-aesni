@@ -21,7 +21,7 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <flo-aesni.h>
-#include <flo-random.h>
+#include <flo-prng.h>
 #include <gtest/gtest.h>
 #include <openssl/evp.h>
 
@@ -253,7 +253,7 @@ TEST_P(AES_TEST, MANY_BLOCKS) {
       << "passed: " << count << "/" << TEST_TIMES << std::endl;
 }
 
-INSTANTIATE_TEST_CASE_P(
+INSTANTIATE_TEST_SUITE_P(
     AES,
     AES_TEST,
     ::testing::Values(
