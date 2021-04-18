@@ -22,7 +22,7 @@
  */
 #include <gtest/gtest.h>
 #include <openssl/sha.h>
-#include <flo-random.h>
+#include <flo-prng.h>
 #include <flo-shani.h>
 
 #define TEST_TIMES 1000

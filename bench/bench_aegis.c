@@ -22,7 +22,7 @@
  */
 #include <stdio.h>
 #include <flo-aegis.h>
-#include <flo-random.h>
+#include <flo-prng.h>
 #include <flo-cpuid.h>
 #include "clocks.h"
 

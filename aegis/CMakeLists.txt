@@ -21,4 +21,5 @@
 cmake_minimum_required(VERSION 3.0)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -maes")
 add_library(flo-aegis STATIC flo-aegis.h aegis_opt.c aegis_ref.c)
-install(TARGETS flo-aegis DESTINATION lib)
+set_target_properties(flo-aegis PROPERTIES PUBLIC_HEADER "flo-aegis.h")
+install(TARGETS flo-aegis LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)

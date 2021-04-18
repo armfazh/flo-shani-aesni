@@ -21,7 +21,7 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <flo-aesni.h>
-#include <flo-random.h>
+#include <flo-prng.h>
 #include <gtest/gtest.h>
 #include <openssl/evp.h>
 
