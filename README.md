@@ -16,7 +16,7 @@ A peer-reviewed paper will be presented in the The 5th ACM ASIA Public-Key Crypt
 
 To cite this work use:
 
-```tex
+```bibtex
 @inproceedings{faz_apkc2018,
     author    = {Faz-Hernandez, Armando and L\'{o}pez, Julio and 
 	             de~Oliveira, Ana Karina D. S.},
