@@ -3,15 +3,16 @@
 This project showcase the performance of cryptographic algorithms accelerated using special hardware instructions, such as SHA-NI and AES-NI.
 
 This source code is part of the research work titled: _"SoK: A Performance Evaluation of Cryptographic Instruction Sets on Modern Architectures"_ by the authors:
- * [Armando Faz-Hernández](http://www.ic.unicamp.br/~armfazh), University of Campinas, Brazil.
- * [Julio López](http://www.ic.unicamp.br/pessoas/docentes/jlopez), University of Campinas, Brazil.
+ * [Armando Faz-Hernández](https://armfazh.github.io/), University of Campinas, Brazil.
+ * [Julio López](https://ic.unicamp.br/docente/julio-cesar-lopez-hernandez/), University of Campinas, Brazil.
  * [Ana Karina D. S. de Oliveira](http://dblp.uni-trier.de/pers/hd/o/Oliveira:Ana_Karina_D=_S=_de), Federal University of Mato Grosso do Sul,  Brazil.
 
 ### Research Resources
 
 A peer-reviewed paper will be presented in the The 5th ACM ASIA Public-Key Cryptography Workshop ([APKC2018](https://www2.nict.go.jp/security/apkc2018/)).
  - Paper [[DOI](http://doi.org/10.1145/3197507.3197511)]
- - Slides [[PDF](http://www.ic.unicamp.br/~ra142685/sok-apkc.pdf)].
+ - Paper [[free](https://dl.acm.org/authorize?N680236)]
+ - Slides [[PDF](https://web.archive.org/web/20221020042024/http://www.ic.unicamp.br/~ra142685/sok-apkc.pdf)].
 
 
 To cite this work use:
