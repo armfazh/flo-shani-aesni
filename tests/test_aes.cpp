@@ -24,6 +24,7 @@
 #include <flo-prng.h>
 #include <gtest/gtest.h>
 #include <openssl/evp.h>
+#include <iomanip>
 
 #define TEST_TIMES 1000
 

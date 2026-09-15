@@ -230,6 +230,8 @@ int crypto_aead_decrypt(
   unsigned char check = 0;
   __m128i aegis128_state[5];
 
+  (void)nsec;
+
   if (clen < 16) return -1;
 
   aegis128_initialization(k, npub, aegis128_state);

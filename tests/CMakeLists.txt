@@ -19,28 +19,33 @@
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 # OR OTHER DEALINGS IN THE SOFTWARE.
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest
+  GIT_TAG        v1.18.0
+)
+FetchContent_MakeAvailable(googletest)
 
 include_directories(../aes)
 include_directories(../sha256)
 include_directories(../prng)
 include_directories(../cpuid)
+include(GoogleTest)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O3 -pedantic")
 
-# Locate GTest
-find_package(GTest REQUIRED)
-link_directories(${GTEST_LIBRARY_DIRS})
+add_executable(tests_sha256 test_sha256.cpp)
+add_dependencies(tests_sha256 flo-shani flo-prng)
+target_link_libraries(tests_sha256 GTest::gtest_main crypto flo-shani flo-prng)
+gtest_discover_tests(tests_sha256)
 
-if(GTest_FOUND)
-	include_directories(${GTEST_INCLUDE_DIRS})
-	add_executable(tests_sha256 runTests.cpp test_sha256.cpp)
-	add_dependencies(tests_sha256 flo-shani flo-prng)
-	target_link_libraries(tests_sha256 ${GTEST_LIBRARIES} crypto flo-shani flo-prng pthread)
-
-	add_executable(tests_aes runTests.cpp test_aes.cpp)
-	add_dependencies(tests_aes flo-aesni flo-prng)
-	target_link_libraries(tests_aes ${GTEST_LIBRARIES} crypto flo-aesni flo-prng pthread)
-endif()
+add_executable(tests_aes test_aes.cpp)
+add_dependencies(tests_aes flo-aesni flo-prng)
+target_link_libraries(tests_aes GTest::gtest_main crypto flo-aesni flo-prng)
+gtest_discover_tests(tests_aes)

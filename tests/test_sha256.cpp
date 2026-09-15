@@ -24,13 +24,14 @@
 #include <openssl/sha.h>
 #include <flo-prng.h>
 #include <flo-shani.h>
+#include <iomanip>
 
 #define TEST_TIMES 1000
 
 #define SHA256_DigestSize 32
 typedef uint8_t Digest[SHA256_DigestSize];
 
-static std::ostream &operator<<(std::ostream &os, const Digest &d) {
+inline std::ostream &operator<<(std::ostream &os, const Digest &d) {
   int i = 0;
   for (i = 0; i < SHA256_DigestSize; i++) {
     os << std::setbase(16) << std::setfill('0') << std::setw(2)

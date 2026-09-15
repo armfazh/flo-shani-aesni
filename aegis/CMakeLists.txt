@@ -18,8 +18,8 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 # OR OTHER DEALINGS IN THE SOFTWARE.
-cmake_minimum_required(VERSION 3.0)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -maes")
+cmake_minimum_required(VERSION 3.12)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -pedantic -maes")
 add_library(flo-aegis STATIC flo-aegis.h aegis_opt.c aegis_ref.c)
 set_target_properties(flo-aegis PROPERTIES PUBLIC_HEADER "flo-aegis.h")
 install(TARGETS flo-aegis LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)

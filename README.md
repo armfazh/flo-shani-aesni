@@ -19,11 +19,11 @@ To cite this work use:
 
 ```bibtex
 @inproceedings{faz_apkc2018,
-    author    = {Faz-Hernandez, Armando and L\'{o}pez, Julio and 
+    author    = {Faz-Hernandez, Armando and L\'{o}pez, Julio and
 	             de~Oliveira, Ana Karina D. S.},
-    title     = {SoK: A Performance Evaluation of Cryptographic 
+    title     = {SoK: A Performance Evaluation of Cryptographic
 	             Instruction Sets on Modern Architectures},
-    booktitle = {Proceedings of the 5th ACM on ASIA Public-Key 
+    booktitle = {Proceedings of the 5th ACM on ASIA Public-Key
 	             Cryptography Workshop},
     series    = {APKC '18},
     year      = {2018},
@@ -40,70 +40,96 @@ To cite this work use:
 	             sha-ni, vector instructions},
 }
 ```
+
 ----
 
 ### Pre-requirements
 
 This library is a standalone C-language code. However, it is used the [Google Test](https://github.com/google/googletest) C++ library to perform unit tests.
 You can install `gtest` library in your system as follows:
- 
+
 ```sh
- # dnf install gtest-devel
+dnf install gtest-devel
 ```
+
 Also, a C++ compiler is needed to compile the test program.
+
+The library also requires the OpenSSL library for compiling the performance benchmark comparison.
+
+```sh
+dnf install openssl-devel
+```
 
 ----
 
 ### Compilation
+
 After cloning this project into your computer youcan perform either method to obtain the libraries and binaries.
+
 ```
- $ git clone https://github.com/armfazh/flo-shani-aesni 
+ $ git clone https://github.com/armfazh/flo-shani-aesni
 ```
 
 #### Method 1:
+
 This method uses CMake tool for compilation.
  -    Create a empty folder
+
 ```
  $ cd flo-shani-aesni
  $ mkdir build
  $ cd build
 ```
+
  - Then, configure the compilation:
+
 ```
  $ CC=gcc CXX=g++ cmake ..
 ```
+
  - You are free to choose your favorite compiler. After that, you must compile using:
+
 ```
- $ make 
+ $ make
 ```
+
  - If everthing goes well, your will have a folder called `bin` with the following files:
+
 ```
  $ ls bin
     bench_aegis
     bench_aes
-    bench_sha256 
-```  
-
+    bench_sha256
+```
 
 #### Method 2:
+
 This method uses classic `Make` tool for compilation:
+
 ```
  $ cd flo-shani-aesni
  $ make
 ```
+
  - If everthing goes well, your will have a folder called `bin` with the following files:
+
 ```
  $ ls bin
     bench_aegis
     bench_aes
-    bench_sha256 
-```  
+    bench_sha256
+```
+
 ### Running benchmark programs
+
  - To run the benchmark of the SHA256 hashing function, execute:
+
 ```
  $ bin/bench_sha256
 ```
+
 Then, program will show you a table comparing the running time of the hash functions, for example:
+
 ```
  $ bin/bench_sha256
 == Start of Benchmark ===
@@ -112,7 +138,7 @@ Experiment: comparing OpenSSL vs SHANI
 Running OpenSSL (shani):
 Running OpenSSL (64-bit):
 Running shani:
-    Cycles per byte 
+    Cycles per byte
 ╔═════════╦═════════╦═════════╦═════════╦═════════╗
 ║  Size   ║ OpenSSL ║ OpenSSL ║This work║ Speedup ║
 ║ (bytes) ║  (x64)  ║ (shani) ║ (shani) ║x64/shani║
@@ -135,20 +161,23 @@ Running shani:
 ```
 
  - To run the benchmark of the AES encryption, execute:
+
 ```
  $ bin/bench_aes
 ```
+
 Then, the program will show you a table reporting the timings of the AES modes of operation:
+
 ```
  $ bin/bench_aes
  == Start of Benchmark ===
  Multiple-message CBC-Encryption:
- Running: CBC Enc 
+ Running: CBC Enc
  Running: CBC Enc 2w
  Running: CBC Enc 4w
  Running: CBC Enc 6w
  Running: CBC Enc 8w
-             Cycles per byte 
+             Cycles per byte
  ╔═════════╦═════════╦═════════╦═════════╦═════════╦═════════╗
  ║  bytes  ║   1x    ║   2x    ║   4x    ║   6x    ║   8x    ║
  ╠═════════╩═════════╩═════════╩═════════╩═════════╩═════════╣
@@ -171,16 +200,19 @@ Then, the program will show you a table reporting the timings of the AES modes o
 
 
  - To run the benchmark of AEGIS cipher, execute:
+
 ```
  $ bin/bench_aegis
 ```
+
 Then, the program will print a table showing the timings:
+
 ```
  $ bin/bench_aegis
  === Start Benchmarking ===
- Running: Reference Implementation 
- Running: Optimized Implementation 
-             Cycles per byte 
+ Running: Reference Implementation
+ Running: Optimized Implementation
+             Cycles per byte
  ╔═════════╦═════════╦═════════╦═════════╦═════════╗
  ║  bytes  ║Reference║Optimized║ Speedup ║ Savings ║
  ╠═════════╩═════════╩═════════╩═════════╩═════════╣
@@ -203,13 +235,14 @@ Then, the program will print a table showing the timings:
 
 ----
 
-### License 
+### License
+
 MIT License ([LICENSE](https://opensource.org/licenses/MIT))
 
 ----
 
-### Contact 
+### Contact
 
-To report some issues or comments of this project, please use the issues webpage [[here](https://github.com/armfazh/flo-shani-aesni/issues)]. 
+To report some issues or comments of this project, please use the issues webpage [[here](https://github.com/armfazh/flo-shani-aesni/issues)].
 
 ----

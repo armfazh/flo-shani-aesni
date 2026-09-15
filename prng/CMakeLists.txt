@@ -18,7 +18,7 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 # OR OTHER DEALINGS IN THE SOFTWARE.
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 add_library(flo-prng flo-prng.h flo-prng.c)
 set_target_properties(flo-prng PROPERTIES PUBLIC_HEADER "flo-prng.h")
 install(TARGETS flo-prng LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)

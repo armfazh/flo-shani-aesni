@@ -18,8 +18,8 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 # OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 # OR OTHER DEALINGS IN THE SOFTWARE.
-cmake_minimum_required(VERSION 3.0)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -maes -mssse3 -msse4.1")
+cmake_minimum_required(VERSION 3.12)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O3 -pedantic -maes -mssse3 -msse4.1")
 add_library(flo-aesni STATIC flo-aesni.h aesni.c)
 set_target_properties(flo-aesni PROPERTIES PUBLIC_HEADER "flo-aesni.h")
 install(TARGETS flo-aesni LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)
