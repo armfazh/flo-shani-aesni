@@ -1,32 +1,37 @@
-/**
- * Copyright (c) 2017 Armando Faz <armfazh@ic.unicamp.br>. All Rights Reserved
- * Institute of Computing.
- * University of Campinas, Brazil.
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2018 Armando Faz
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation, version 2 or greater.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 #include <stdio.h>
-#include <shani.h>
 #include <openssl/sha.h>
-#include <prng/flo-random.h>
-#include <cpuid/flo-cpuid.h>
+#include <flo-shani.h>
+#include <flo-prng.h>
+#include <flo-cpuid.h>
 #include "clocks.h"
 
 /**
  * Maximum size of the message to be hashed: 2^MAX_SIZE_BITS.
  * E.g. for hashing messages of 4096 bytes, set MAX_SIZE_BITS to 13.
  */
-#define MAX_SIZE_BITS 21
+#define MAX_SIZE_BITS 13
 
 struct seqTimings {
   uint64_t size;
@@ -93,45 +98,45 @@ void print_tableVectorized(struct parallelTimings *table, int items) {
   int i;
   printf("Experiment: comparing OpenSSL vs SHANI\n");
   printf("            Cycles per byte \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
+    printf("║%9ld║%9.2f║%9.2f║%9.2f║\n",
            table[i].size,
            table[i]._1x / (double) table[i].size / 1.0,
            table[i]._4x / (double) table[i].size / 4.0,
            table[i]._8x / (double) table[i].size / 8.0,
            table[i]._16x / (double) table[i].size / 16.0);
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
   printf("                 Speedup  \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
+    printf("║%9ld║%9.2f║%9.2f║%9.2f║\n",
            table[i].size,
            1.0 * table[i]._1x / (double) table[i]._1x,
            4.0 * table[i]._1x / (double) table[i]._4x,
-           8.0 * table[i]._1x / (double) table[i]._8x,
-           16.0 * table[i]._1x / (double) table[i]._16x);
+           8.0 * table[i]._1x /(double) table[i]._8x,
+           16.0 * table[i]._1x /(double) table[i]._16x);
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
 
   printf("                 Savings \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
+  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
+  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
+  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
   for (i = 0; i < items; i++) {
-    printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║%8.2f%%║\n",
+    printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║\n",
            table[i].size,
            100.0 * (1 - table[i]._1x / ((double) table[i]._1x * 1.0)),
            100.0 * (1 - table[i]._4x / ((double) table[i]._1x * 4.0)),
            100.0 * (1 - table[i]._8x / ((double) table[i]._1x * 8.0)),
            100.0 * (1 - table[i]._16x / ((double) table[i]._1x * 16.0)));
   }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
+  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
 }
 
 #define BENCH_SIZE_1W(FUNC, IMPL)      \
@@ -255,138 +260,13 @@ void bench_OpenSSL_vs_SHANI() {
   _mm_free(message);
 }
 
-void print_tablePipelined(struct parallelTimings *table, int items) {
-  int i;
-  printf("                Cycles per byte \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   2x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
-           table[i].size,
-           table[i]._1x / (double) table[i].size / 1.0,
-           table[i]._2x / (double) table[i].size / 2.0,
-           table[i]._4x / (double) table[i].size / 4.0,
-           table[i]._8x / (double) table[i].size / 8.0);
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
-  printf("               Speedup  \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   2x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
-           table[i].size,
-           1.0 * table[i]._1x / (double) table[i]._1x,
-           2.0 * table[i]._1x / (double) table[i]._2x,
-           4.0 * table[i]._1x / (double) table[i]._4x,
-           8.0 * table[i]._1x / (double) table[i]._8x);
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
-
-  printf("                Savings \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   2x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║%8.2f%%║\n",
-           table[i].size,
-           100.0 * (1 - table[i]._1x / ((double) table[i]._1x * 1.0)),
-           100.0 * (1 - table[i]._2x / ((double) table[i]._1x * 2.0)),
-           100.0 * (1 - table[i]._4x / ((double) table[i]._1x * 4.0)),
-           100.0 * (1 - table[i]._8x / ((double) table[i]._1x * 8.0)));
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
-}
-
-void bench_Pipelined() {
-  struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0,0} };
-  unsigned char digest[32];
-  unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
-  unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
-
-  printf("Pipelined Implementations of SHA-256:\n");
-  if (hasSHANI()) {
-    printf("Running 1x:\n");
-    BENCH_SIZE_1W(sha256_update_shani, _1x);
-    printf("Running 2x:\n");
-    BENCH_SIZE_NW(sha256_x2_update_shani_2x, 2);
-    printf("Running 4x:\n");
-    BENCH_SIZE_NW(sha256_x4_update_shani_4x, 4);
-    printf("Running 8x:\n");
-    BENCH_SIZE_NW(sha256_x8_update_shani_8x, 8);
-    print_tablePipelined(table, MAX_SIZE_BITS);
-  } else {
-    printf("This processor does not supports SHANI set.\n");
-  }
-}
-
-void print_tableVectorized(struct parallelTimings *table, int items) {
-  int i;
-
-  printf("            Cycles  \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%9ld║%9ld║%9ld║%9ld║\n",
-           table[i].size,
-           table[i]._1x ,
-           table[i]._4x ,
-           table[i]._8x ,
-           table[i]._16x);
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╝\n");
-
-  printf("            Cycles per byte \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
-           table[i].size,
-           table[i]._1x / (double) table[i].size / 1.0,
-           table[i]._4x / (double) table[i].size / 4.0,
-           table[i]._8x / (double) table[i].size / 8.0,
-           table[i]._16x / (double) table[i].size / 16.0);
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
-  printf("                 Speedup  \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%9.2f║%9.2f║%9.2f║%9.2f║\n",
-           table[i].size,
-           1.0 * table[i]._1x / (double) table[i]._1x,
-           4.0 * table[i]._1x / (double) table[i]._4x,
-           8.0 * table[i]._1x / (double) table[i]._8x,
-           16.0 * table[i]._1x / (double) table[i]._16x);
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
-
-  printf("                 Savings \n");
-  printf("╔═════════╦═════════╦═════════╦═════════╦═════════╗\n");
-  printf("║  bytes  ║   1x    ║   4x    ║   8x    ║   16x   ║\n");
-  printf("╠═════════╩═════════╩═════════╩═════════╩═════════╣\n");
-  for (i = 0; i < items; i++) {
-    printf("║%9ld║%8.2f%%║%8.2f%%║%8.2f%%║%8.2f%%║\n",
-           table[i].size,
-           100.0 * (1 - table[i]._1x / ((double) table[i]._1x * 1.0)),
-           100.0 * (1 - table[i]._4x / ((double) table[i]._1x * 4.0)),
-           100.0 * (1 - table[i]._8x / ((double) table[i]._1x * 8.0)),
-           100.0 * (1 - table[i]._16x / ((double) table[i]._1x * 16.0)));
-  }
-  printf("╚═════════╩═════════╩═════════╩═════════╩═════════╝\n");
-}
-
 void bench_Vectorized(){
   struct parallelTimings table[MAX_SIZE_BITS] = { {0,0,0,0,0,0} };
   unsigned long MAX_SIZE = 1 << MAX_SIZE_BITS;
   unsigned char *message = (unsigned char *) _mm_malloc(MAX_SIZE, ALIGN_BYTES);
   unsigned char digest[32];
 
-  printf("Vectorized Implementations of SHA-256:\n");
+  printf("\nExperiment: vectorized implementations of SHA-256.\n");
   disableSHANI();
   printf("Running OpenSSL (64-bit):\n");
   BENCH_SIZE_1W(SHA256, _1x);

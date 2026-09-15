@@ -140,7 +140,6 @@ ALIGN const uint32_t big_endian_512[16] = {0x00010203,0x04050607,0x08090a0b,0x0c
     W7 = h0_h1_h2_h3_h4_h5_h6_h7;                                                                             \
 }while(0)
 
-
 #define TRANSPOSE_16WAY(W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, Wa, Wb, Wc, Wd, We, Wf)  do{                  \
     __m512i a0_b0_c0_d0_a4_b4_c4_d4 = _mm512_shuffle_i64x2(W0,W4,0x20);                                       \
     __m512i a1_b1_c1_d1_a5_b5_c5_d5 = _mm512_shuffle_i64x2(W1,W5,0x20);                                       \
@@ -234,7 +233,25 @@ static inline void transpose_msg_256(__m256i *w) {
 }
 
 static inline void transpose_state_512(__m512i *w) {
-//  TRANSPOSE_16WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7]);
+  /* [TODO] */
+  __m512i ZERO_0 = _mm512_setzero_si512();
+  __m512i ZERO_1 = _mm512_setzero_si512();
+  __m512i ZERO_2 = _mm512_setzero_si512();
+  __m512i ZERO_3 = _mm512_setzero_si512();
+  __m512i ZERO_4 = _mm512_setzero_si512();
+  __m512i ZERO_5 = _mm512_setzero_si512();
+  __m512i ZERO_6 = _mm512_setzero_si512();
+  __m512i ZERO_7 = _mm512_setzero_si512();
+  TRANSPOSE_16WAY(w[0x0], w[0x1], w[0x2], w[0x3], w[0x4], w[0x5], w[0x6], w[0x7],
+                  ZERO_0, ZERO_1, ZERO_2, ZERO_3, ZERO_4, ZERO_5, ZERO_6, ZERO_7);
+  w[0x0] = _mm512_inserti64x4(w[0x0], _mm512_castsi512_si256(w[0x0]), 1);
+  w[0x1] = _mm512_inserti64x4(w[0x1], _mm512_castsi512_si256(w[0x1]), 1);
+  w[0x2] = _mm512_inserti64x4(w[0x2], _mm512_castsi512_si256(w[0x2]), 1);
+  w[0x3] = _mm512_inserti64x4(w[0x3], _mm512_castsi512_si256(w[0x3]), 1);
+  w[0x4] = _mm512_inserti64x4(w[0x4], _mm512_castsi512_si256(w[0x4]), 1);
+  w[0x5] = _mm512_inserti64x4(w[0x5], _mm512_castsi512_si256(w[0x5]), 1);
+  w[0x6] = _mm512_inserti64x4(w[0x6], _mm512_castsi512_si256(w[0x6]), 1);
+  w[0x7] = _mm512_inserti64x4(w[0x7], _mm512_castsi512_si256(w[0x7]), 1);
 }
 
 static inline void transpose_msg_512(__m512i *w) {
@@ -409,7 +426,6 @@ void sha256_vec_ ## NUM ## 256b (      \
 
 #define store_digest_512(TYPE) \
   _mm512_mask_store_epi64(digest[msg], (__mmask8)0x0f,SHUF8_ ## TYPE(state[0], big_endian));
-
 
 #define sha256_Nw(NUM,TYPE)       \
 void sha256_ ## NUM ## w(         \

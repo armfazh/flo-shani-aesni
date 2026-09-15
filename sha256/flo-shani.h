@@ -41,47 +41,6 @@ extern "C"{
 
 #define SHA256_HASH_SIZE 32 /*! <- SHA2-256 produces a 32-byte output. */
 
-//typedef unsigned char
-//    *(*SHA2Function)(const unsigned char *message, long unsigned int message_length, unsigned char *digest);
-//typedef void(*SHA2Function_x2)(
-//    const unsigned char *message0,
-//    const unsigned char *message1,
-//    long unsigned int message_length,
-//    unsigned char *digest0,
-//    unsigned char *digest1
-//);
-//typedef void(*SHA2Function_x4)(
-//    const unsigned char *message0,
-//    const unsigned char *message1,
-//    const unsigned char *message2,
-//    const unsigned char *message3,
-//    long unsigned int message_length,
-//    unsigned char *digest0,
-//    unsigned char *digest1,
-//    unsigned char *digest2,
-//    unsigned char *digest3
-//);
-//
-//typedef void(*SHA2Function_x8)(
-//    const unsigned char *message0,
-//    const unsigned char *message1,
-//    const unsigned char *message2,
-//    const unsigned char *message3,
-//    const unsigned char *message4,
-//    const unsigned char *message5,
-//    const unsigned char *message6,
-//    const unsigned char *message7,
-//    long unsigned int message_length,
-//    unsigned char *digest0,
-//    unsigned char *digest1,
-//    unsigned char *digest2,
-//    unsigned char *digest3,
-//    unsigned char *digest4,
-//    unsigned char *digest5,
-//    unsigned char *digest6,
-//    unsigned char *digest7
-//);
-
 #define SHA_CORE_DEF(CORE)\
 unsigned char * sha256##_##CORE(const unsigned char *message, long unsigned int message_length,unsigned char *digest);
 
@@ -103,6 +62,12 @@ unsigned char *message[8],\
 long unsigned int message_length,\
 unsigned char *digest[8]);
 
+#define SHA_X16_CORE_DEF(CORE_X16)\
+void sha256_x16##_##CORE_X16(\
+unsigned char *message[16],\
+long unsigned int message_length,\
+unsigned char *digest[16]);
+
 /* Single-message implementation */
 SHA_CORE_DEF(update_shani)
 
@@ -110,6 +75,7 @@ SHA_CORE_DEF(update_shani)
 SHA_X2_CORE_DEF(update_shani_2x)
 SHA_X4_CORE_DEF(update_shani_4x)
 SHA_X8_CORE_DEF(update_shani_8x)
+SHA_X16_CORE_DEF(update_shani_16x)
 
 extern const ALIGN uint32_t CONST_K[64];
 
@@ -127,6 +93,7 @@ void sha256_ ## NUM ## w(         \
 /* For arbitrary-large input messages */
 dec_sha256_vec_256b(4);
 dec_sha256_vec_256b(8);
+dec_sha256_vec_256b(16);
 /* For 256-bit input messages */
 dec_sha256_Nw(4);
 dec_sha256_Nw(8);
