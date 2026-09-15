@@ -43,22 +43,14 @@ To cite this work use:
 
 ----
 
-### Pre-requirements
+### Dependencies
 
-This library is a standalone C-language code. However, it is used the [Google Test](https://github.com/google/googletest) C++ library to perform unit tests.
-You can install `gtest` library in your system as follows:
+This library is a standalone C-language code.
 
-```sh
-dnf install gtest-devel
-```
-
-Also, a C++ compiler is needed to compile the test program.
-
-The library also requires the OpenSSL library for compiling the performance benchmark comparison.
-
-```sh
-dnf install openssl-devel
-```
+Dependencies:
+- The [Google Test](https://github.com/google/googletest) C++ library to perform unit tests.
+- A C++ compiler is needed to compile the test program.
+- The [OpenSSL](https://openssl.org) library for compiling the performance benchmark comparison.
 
 ----
 
